@@ -1,0 +1,167 @@
+#!/usr/bin/env python
+
+# Copyright (C) 2025 Karolina Krzesińska <kzokr@dtu.dk> 
+# Danish Cancer Institute 
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+import os
+import pandas as pd
+import logging as log
+import argparse
+import sys
+import re
+
+# Set up logging
+log.basicConfig(level=log.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+def check_path(path):
+    """Validate path of a file exists"""
+    if not os.path.exists(path):
+        log.error(f"Constructed path not found: {path}")
+        sys.exit(1)
+
+def get_domains(df):
+    """Identify consecutive residue ranges to define domain regions."""
+    residues = sorted(set(df['Mutation'].dropna().astype(str).str[1:-1].astype(int)))
+
+    domains = []
+    start, end = None, None
+    for res in residues:
+        if start is None:
+            start = end = res
+        elif res == end + 1:
+            end = res
+        else:
+            domains.append(f"{start}-{end}")
+            start = end = res
+    if start is not None:
+        domains.append(f"{start}-{end}")
+
+    return domains
+
+def parse_index(index_path):
+    """Retrieve Uniprot ID from index file."""
+    try:
+        index_df = pd.read_csv(index_path)
+        return dict(zip(index_df['Protein'], index_df['Uniprot AC']))
+    except Exception as e:
+        log.error(f"Error occurred while parsing {index_path}: {e}")
+        return {}
+
+def get_domain_pfam(df, start, end):
+    """For a given domain return the unique Pfam domain annotations."""
+    # Mask for residues in domain
+    mask = df['Mutation'].notna() & df['Mutation'].str[1:-1].astype(int).between(start, end)
+
+    # Extract Pfam domain annotations
+    pfam_list = (df.loc[mask, 'Pfam domain classification']
+        .dropna()
+        .apply(lambda x: re.search(r'PF\d{5}', x).group(0) if re.search(r'PF\d{5}', x) else None)
+        .dropna()
+        .unique()
+        .tolist())
+
+    return ','.join(pfam_list)
+
+def main():
+    parser = argparse.ArgumentParser(description="Process protein domain information from dataset tables.")
+    parser.add_argument('-p', '--path', type=str, required=True, help="Path to the base directory.")
+    parser.add_argument('-m', '--mode', choices=['simple_mode', 'ensemble_mode'], required=True, help="MAVISp mode directory to use for parsing deposited CSV files.")
+    parser.add_argument('-a', '--alphabetical', action='store_true', help="Flag to drop duplicates by keeping the first domain alphabetically, sorted by protein name. default=Random.")
+    parser.add_argument('-c', '--column', type=str, help="Option to report only proteins containing a specified column. Write in single quotes ''. Default is all protein CSV are considered in the specified directory")
+    args = parser.parse_args()
+
+    dataset_path = os.path.join(args.path, args.mode, 'dataset_tables')
+    index_path = os.path.join(args.path, args.mode, 'index.csv')
+
+    check_path(dataset_path)
+    check_path(index_path)
+
+    uniprot_map = parse_index(index_path)
+    results = []
+    column_found = not args.column  
+
+    for file in os.listdir(dataset_path):
+        if not file.endswith('.csv'):
+            continue
+
+        protein_name = file.split('-')[0]
+        file_path = os.path.join(dataset_path, file)
+
+        try:
+            df = pd.read_csv(file_path)
+        except Exception as e:
+            log.error(f"Failed to read {file}: {e}")
+            sys.exit(1)
+
+        if 'Pfam domain classification' not in df.columns:
+            log.warning(f"Pfam column not found in file {file}. Skipping...")
+            continue
+
+        if args.column:
+            if args.column not in df.columns:
+                log.error(f"Column {args.column} not found in file {file}. Skipping...")
+                continue
+            else:
+                column_found = True 
+
+        # Extract info from csv files
+        domains = get_domains(df)
+        uniprot_ac = uniprot_map.get(protein_name, "Unknown")
+
+        for domain in domains:
+
+            start = int(domain.split("-")[0])
+            end  = int(domain.split("-")[1])
+
+            # Calculate total number of residues in the domain
+            domain_total = (end - start) + 1
+
+            # Get the pfam annotation for the domain
+            pfam_fold = get_domain_pfam(df, start, end)
+
+            results.append({
+                    'protein': protein_name,
+                    'mavisp_structure': f"{start}-{end}",
+                    'total_aa': domain_total,
+                    'uniprot_ac': uniprot_ac,
+                    'pfam_fold': pfam_fold})
+
+    # Raise error if none of the files have specified column
+    if args.column and not column_found:
+        log.error(f"None of the CSV files contain the required column: {args.column}. Exiting...")
+        sys.exit(1)
+
+    # Result to df
+    results_df = pd.DataFrame(results)
+
+    # Drop duplicated domains 
+    if args.alphabetical:
+        log.info("Dropping duplicates in a alphabetical manner.")
+        results_df = results_df.sort_values(by=['protein'])
+        results_df= results_df.drop_duplicates(subset=['pfam_fold'], keep='first')
+
+    else: 
+        log.info("Dropping duplicates in a random manner.")
+        random_rows = results_df.sample(frac=1).drop_duplicates(subset=['pfam_fold'])
+        results_df = results_df.loc[random_rows.index]
+
+    # Save output
+    results_df = results_df.sort_values(by=['protein'])
+    results_df.to_csv('mavisp_unique_pfam.csv', index=False)
+    log.info("Results saved to mavisp_unique_pfam.csv")
+
+if __name__ == "__main__":
+    main()
