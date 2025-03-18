@@ -11,5 +11,5 @@ This repository provides accessory tools associated with papers and activities o
 
 If you use this repository, please cite the following works:  
 
-- Arnaudi, Matteo, et al. *"MAVISp: A Modular Structure-Based Framework for Protein Variant Effects."* bioRxiv (2022).  
+- Arnaudi, Matteo, et al. *"MAVISp: A Modular Structure-Based Framework for Protein Variant Effects."* bioRxiv (2024).  
 - Krzesińska, Karolina, et al. *"Deciphering Long-Range Effects of Mutations: An Integrated Approach Using Elastic Network Models and Protein Structure Networks."* Manuscript under review.  
