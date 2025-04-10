@@ -1,0 +1,3 @@
+Mutation,HGVSg,note
+S2Y,"hg19,12:g.133263890G>T",ERROR: The SpliceAI model did not return any scores for chr12-133263890-G-T. This may be due to the variant falling outside of all Gencode exons and introns.
+S2Y,"hg19,12:g.133263890G>T",ERROR: Pangolin was unable to compute scores for this variant
