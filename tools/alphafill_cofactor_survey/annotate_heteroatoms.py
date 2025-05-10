@@ -21,12 +21,13 @@ with open(args.dictionary, "r") as f:
 
 # --- Create lookup: compound_id -> cofactor name ---
 ligand_to_cofactor = {}
+all_cofactors_from_json = set()
 for name, entries in cofactor_dict.items():
     for entry in entries:
         for lid in entry.get("cofactors", []):
             if lid:
                 ligand_to_cofactor[lid.upper()] = name
-
+                all_cofactors_from_json.add(lid.upper()) 
 
 # --- read unique compound list from alphafill ---
 with open(args.compounds, "r") as f:
@@ -40,7 +41,7 @@ for ligand in ligand_ids:
     cofactor_name = ligand_to_cofactor.get(ligand)
     if cofactor_name:
         annotated.append((ligand, cofactor_name))
-        cofactor_only.append(ligand)  # <-- tilføjet
+        cofactor_only.append(ligand)
     else:
         annotated.append((ligand, "not a cofactor"))
 
@@ -52,8 +53,10 @@ with open(annotated_output, "w", newline="") as out:
     writer.writerows(annotated)
 
 with open(cofactor_only_output, "w") as f:
-    for ligand in cofactor_only:
-        f.write(f"{ligand}\n")
+    for lid in sorted(all_cofactors_from_json):
+        f.write(f"{lid}\n")
+  #  for ligand in cofactor_only:
+   #     f.write(f"{ligand}\n")
 
 
 print(f"Annotated {len(ligand_ids)} heteroatoms -> saved to '{annotated_output}'")

@@ -11,18 +11,14 @@ def fetch_cofactors(upid):
     json_url = f"https://alphafill.eu/v1/aff/{upid}/json"
     unique_cofactors = set()
 
-    try:
-        r = requests.get(json_url)
-        r.raise_for_status()
-    except requests.RequestException as e:
-        print(f"Error fetching data for {upid}: {e}")
-        return "error", None
+    r = requests.get(json_url)
+    r.raise_for_status()
 
     try:
         data = r.json()
     except ValueError as e:
         print(f"Error parsing JSON for {upid}: {e}")
-        return "error", None
+        raise e
 
     hits = data.get("hits", [])
     if not hits:
@@ -68,6 +64,10 @@ def main():
         print("Error: Provide either -u or -i")
         sys.exit(1)
 
+    if args.u and args.i:
+        print("Error: Provide either -u or -i, not both.")
+        sys.exit(1)
+
     upids = [args.u] if args.u else [line.strip() for line in open(args.i) if line.strip()]
     filter_set = load_filter_file(args.filter) if args.filter else None
 
@@ -80,14 +80,13 @@ def main():
     unique_heteroatoms = set()
 
     for upid in upids:
-        status, cofactors = fetch_cofactors(upid)
-
-        if status == "error":
+        try:
+            status, cofactors = fetch_cofactors(upid)
+        except (requests.RequestException, ValueError) as e:
+            print(f"Error fetching or parsing data for {upid}: {e}")
             all_rows.append([upid, "Error"])
             if filter_set:
                 filtered_rows.append([upid, "Error"])
-            if args.u:  # Exit early if in single-ID mode
-                sys.exit(1)
             continue
 
         if status == "none":
@@ -103,6 +102,7 @@ def main():
         if filter_set:
             matched = [c for c in cofactors if c in filter_set]
             filtered_rows.append([upid, ' '.join(matched) if matched else "None"])
+
 
     # Write output files
     with open(out_all, "w", newline='') as f:
