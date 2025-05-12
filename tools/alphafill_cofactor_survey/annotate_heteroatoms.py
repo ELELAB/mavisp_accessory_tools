@@ -55,8 +55,6 @@ with open(annotated_output, "w", newline="") as out:
 with open(cofactor_only_output, "w") as f:
     for lid in sorted(all_cofactors_from_json):
         f.write(f"{lid}\n")
-  #  for ligand in cofactor_only:
-   #     f.write(f"{ligand}\n")
 
 
 print(f"Annotated {len(ligand_ids)} heteroatoms -> saved to '{annotated_output}'")
