@@ -10,6 +10,8 @@ This repository provides accessory tools associated with papers and activities o
   *"From Structure to Function: Interpreting the Effects of DNA Polymerase Variants in Cancer"*
 - **get_second_sphere_residues.py** Python script designed to identify the second coordination sphere residues of catalytic residues provided as input.
   *"From Structure to Function: Interpreting the Effects of DNA Polymerase Variants in Cancer"*
+- **alphafill_cofactor_survey** Python script querying AlphaFill for a Uniprot AC or a list of Uniprot AC's to find and list potential cofactors.
+
  
 ## Citations  
 
