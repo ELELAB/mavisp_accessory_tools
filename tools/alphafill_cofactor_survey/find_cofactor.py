@@ -5,6 +5,7 @@ import requests
 import sys
 import csv
 import os
+import pandas as pd
 
 def fetch_cofactors(upid):
     """ Fetch cofactors from AlphaFill for one UniProt ID. Returns (status, list of cofactors or None) """
@@ -54,7 +55,7 @@ def load_filter_file(filepath):
 def main():
     parser = argparse.ArgumentParser(description="Query AlphaFill for cofactors, with optional filtering.")
     parser.add_argument("-u", help="Single UniProt ID")
-    parser.add_argument("-i", help="File with UniProt IDs")
+    parser.add_argument("-i", help="Index file with dataset, should have column 'UniProt AC'")
     parser.add_argument("-f", "--filter", help="Optional file with valid cofactor IDs")
     parser.add_argument("-o", "--output", default="summary_output", help="Output file prefix")
 
@@ -67,8 +68,8 @@ def main():
     if args.u and args.i:
         print("Error: Provide either -u or -i, not both.")
         sys.exit(1)
-
-    upids = [args.u] if args.u else [line.strip() for line in open(args.i) if line.strip()]
+        
+    upids =[args.u] if args.u else pd.read_csv(args.i)['Uniprot AC'].dropna().astype(str).tolist()
     filter_set = load_filter_file(args.filter) if args.filter else None
 
     out_all = f"{args.output}.csv"
@@ -122,5 +123,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 
