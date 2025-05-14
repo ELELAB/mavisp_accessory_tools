@@ -1,3 +1,20 @@
+# find_cofactors.py
+# Copyright (C) 2025 Matteo Tiberti & Laura Kappel,
+# Danish Cancer Institute
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 #!/usr/bin/env python3
 
 import argparse
@@ -5,6 +22,7 @@ import requests
 import sys
 import csv
 import os
+import pandas as pd
 
 def fetch_cofactors(upid):
     """ Fetch cofactors from AlphaFill for one UniProt ID. Returns (status, list of cofactors or None) """
@@ -54,7 +72,7 @@ def load_filter_file(filepath):
 def main():
     parser = argparse.ArgumentParser(description="Query AlphaFill for cofactors, with optional filtering.")
     parser.add_argument("-u", help="Single UniProt ID")
-    parser.add_argument("-i", help="File with UniProt IDs")
+    parser.add_argument("-i", help="Index file with dataset, should have column 'UniProt AC'")
     parser.add_argument("-f", "--filter", help="Optional file with valid cofactor IDs")
     parser.add_argument("-o", "--output", default="summary_output", help="Output file prefix")
 
@@ -66,11 +84,9 @@ def main():
 
     if args.u and args.i:
         print("Error: Provide either -u or -i, not both.")
-        sys.exit(1)
-
-    upids = [args.u] if args.u else [line.strip() for line in open(args.i) if line.strip()]
+        sys.exit(1)        
+    upids =[args.u] if args.u else pd.read_csv(args.i)['Uniprot AC'].dropna().astype(str).tolist()
     filter_set = load_filter_file(args.filter) if args.filter else None
-
     out_all = f"{args.output}.csv"
     out_filtered = f"{args.output}_filtered.csv" if filter_set else None
     out_unique = f"{args.output}_unique_heteroatoms.txt"
@@ -122,5 +138,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 
