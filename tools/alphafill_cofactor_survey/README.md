@@ -77,6 +77,6 @@ python ../../annotate_heteroatoms.py -d ../../cofactors_dict.json -c ../find_cof
 
 
 ## **Output**
-1) A csv with all your heteroatoms annotated with the json dictionary, "all_heteroatoms_annotated.csv ". If the heteroatom is not in the list it is annotated as "not a cofactor". Columns containing metadata. 
+1) A csv with all your heteroatoms annotated with the json dictionary, "all_heteroatoms_annotated.csv ". If the heteroatom is not in the list it is annotated as "not a cofactor". The remaining columns contain annotations downloaded from PDB.
 2) A list of only the heteroatoms that were cofactors (according to the json dictionary), "cofactor_only.txt".  
 
