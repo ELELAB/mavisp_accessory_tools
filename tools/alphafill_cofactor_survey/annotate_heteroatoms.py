@@ -7,7 +7,7 @@ import requests
 # --- Arguments ---
 parser = argparse.ArgumentParser(description="Annotate ligand IDs with cofactor names if these exist.")
 parser.add_argument("-d", "--dictionary", required=True, help="Path to JSON dictionary file")
-parser.add_argument("-c", "--compounds", required=True, help="Path to unique list of heteroatoms file (one per line)")
+parser.add_argument("-c", "--compounds", required=False, default=None, help="Path to unique list of heteroatoms file (one per line)")
 parser.add_argument("-o", "--output", default="all_heteroatoms_annotated.csv", help="Output CSV file")
 args = parser.parse_args()
 
@@ -96,7 +96,7 @@ def extract_info(compound_id, data):
 
 # --- Output files ---
 
-cofactor_only_output = "cofactor_only.txt"
+cofactor_only_output = "all_cofactors.txt"
 
 
 # --- Read dictionary ---
@@ -115,8 +115,11 @@ for name, entries in cofactor_dict.items():
                 all_cofactors_from_json.add(lid.upper()) 
 
 # --- read unique compound list from alphafill ---
-with open(args.compounds, "r") as f:
-    ligand_ids = [line.strip().upper() for line in f if line.strip()]
+if args.compounds is None:
+    ligand_ids = ligand_to_cofactor.keys()
+else:
+    with open(args.compounds, "r") as f:
+        ligand_ids = [line.strip().upper() for line in f if line.strip()]
 
 # --- Annotate compounds ---
 annotated = []

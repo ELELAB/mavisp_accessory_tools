@@ -67,11 +67,9 @@ def main():
 
     if args.u and args.i:
         print("Error: Provide either -u or -i, not both.")
-        sys.exit(1)
-        
+        sys.exit(1)        
     upids =[args.u] if args.u else pd.read_csv(args.i)['Uniprot AC'].dropna().astype(str).tolist()
     filter_set = load_filter_file(args.filter) if args.filter else None
-
     out_all = f"{args.output}.csv"
     out_filtered = f"{args.output}_filtered.csv" if filter_set else None
     out_unique = f"{args.output}_unique_heteroatoms.txt"

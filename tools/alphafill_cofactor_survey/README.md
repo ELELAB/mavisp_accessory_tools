@@ -4,7 +4,7 @@
 The `find_cofactor.py` script queries ALphafill for a Uniprot AC or a list of Uniprot ACs. It then extracts the list of potential cofactors for this/these protein(s). 
 Only Alphafill results with identity >=30% are included
 
-To run the script, the user must provide a single Uniprot AC or a MAVISp metadata file (csv) including the column "UniProt AC".
+To run the script, the user must provide a single Uniprot AC or a MAVISp database index file (csv) including the column "UniProt AC".
 The user can adjust the name of the output folder with an optional last argument
 
 ### **Output**

@@ -1,4 +1,4 @@
-In this example we used the script find_cofactor.py for an index file with mavisp metadata (index.csv) together with a filterfile to only recognize heteroatoms in that list. 
+In this example we used the script find_cofactor.py for a MAVISp database index file (index.csv) together with a filterfile to only recognize heteroatoms in that list. 
 
 
 The script uses 4 flags. Mandatory to use either -u or -i
@@ -14,7 +14,7 @@ The script uses 4 flags. Mandatory to use either -u or -i
 #python ../../find_cofactor.py -i index.csv
 
 # Run with cofactor filter list (to only keep heteroatoms that are in that list)
-python ../../find_cofactor.py -i index.csv -f ../annotate_heteroatoms/cofactor_only.txt -o summary_output
+python ../../find_cofactor.py -i index.csv -f ../annotate_heteroatoms/all_cofactors.txt  -o summary_output
 
 
 

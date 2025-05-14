@@ -1,2 +1,2 @@
 module load python
-python ../../find_cofactor.py -i index.csv -f ../annotate_heteroatoms/cofactor_only.txt -o summary_output
+python ../../find_cofactor.py -i index.csv -f ../annotate_heteroatoms/all_cofactors.txt -o summary_output
