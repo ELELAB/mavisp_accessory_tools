@@ -1,0 +1,2 @@
+sensitivity,specificity,accuracy,precision,F1 score,MCC score,gene length
+0.998,0.995,0.995,0.981,0.989,0.986,AF2_44-140
