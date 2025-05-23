@@ -11,8 +11,9 @@ This repository provides accessory tools associated with papers and activities o
 - **get_second_sphere_residues.py** Python script designed to identify the second coordination sphere residues of catalytic residues provided as input.
   *"From Structure to Function: Interpreting the Effects of DNA Polymerase Variants in Cancer"*
 - **alphafill_cofactor_survey** Python script querying AlphaFill for a Uniprot AC or a list of Uniprot AC's to find and list potential cofactors.
+- **stability_benchmark_sim_length** uses a Python script that visualizes the performance of different simulation times against a gold standard using confusion matrices, calculating key metrics such as sensitivity, specificity, accuracy, precision, F1 score, and structure length for one or multiple genes.
+- **consensus_benchmark_sim_length** is a Python script that generates confusion matrix plots and calculates performance metrics for MAVISP stability classification across ensemble datasets from different simulation times, comparing them to a gold-standard time and producing both gene-specific and aggregated results with supporting CSV files. 
 
- 
 ## Citations  
 
 If you use this repository, please cite the following works:  
