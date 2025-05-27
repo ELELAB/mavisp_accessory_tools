@@ -31,17 +31,30 @@ def validate_residue_range(pdb_file, trimming_range):
         log.error(f"❌ PDB file '{pdb_file}' does not exist.")
         sys.exit(1)
 
-    start_res, end_res = map(int, trimming_range.split('-'))
-    u = mda.Universe(pdb_file)
-    residue_ids = [res.resid for res in u.residues]
-    min_res, max_res = min(residue_ids), max(residue_ids)
-
-    if not (min_res <= start_res <= max_res) or not (min_res <= end_res <= max_res):
-        log.error(f"❌ Error: Trimming range {trimming_range} is outside residue range of the PDB {min_res}-{max_res}")
+    try:
+        start_res, end_res = map(int, trimming_range.split('-'))
+    except ValueError:
+        log.error(f"❌ Invalid format for trimming range '{trimming_range}'. Use format e.g. '1-122'.")
         sys.exit(1)
-    log.info(f"✅ Residue range {trimming_range} is valid.")
 
-def calculate_asphericity(pdb_file):
+    u = mda.Universe(pdb_file)
+
+    chain_ids = set(res.segid.strip() for res in u.residues if res.segid.strip())
+    if len(chain_ids) != 1:
+        log.error(f"❌ Structure contains multiple chains: {sorted(chain_ids)}. Input single chain only.")
+        sys.exit(1)
+
+    pdb_residue_ids = set(res.resid for res in u.residues)
+    requested_ids = set(range(start_res, end_res + 1))
+    missing_ids = requested_ids - pdb_residue_ids
+
+    if missing_ids:
+        log.error(f"❌ Residues not found in PDB: {sorted(missing_ids)}")
+        sys.exit(1)
+
+    log.info(f"✅ Residue range {trimming_range} and structure are valid.")
+
+def calculate_asphericity(pdb_file, trimming_range):
     """Calculates the asphericity of the structure using MDAnalysis.
 
     Asphericity is a measure of how non-spherical a structure is,
@@ -49,12 +62,18 @@ def calculate_asphericity(pdb_file):
 
     Args:
         pdb_file (str):Path to the input PDB
+        trimming_range (str): Residue range in format "start-end" ("1-122")
 
     Returns:
         float: Asphericity value for the structure
     """
     u = mda.Universe(pdb_file)
-    asphericity = u.atoms.asphericity(pbc=False)
+
+    start_res, end_res = map(int, trimming_range.split('-'))
+    selection = f"resid {start_res}:{end_res}"
+    atoms = u.select_atoms(selection)
+    asphericity = atoms.asphericity(pbc=False)
+
     log.info(f"✅ Asphericity = {asphericity:.3f}")
 
     return asphericity
@@ -133,15 +152,10 @@ def main():
 
     output_file = args.output or f"{model_id}_globularity_recap.csv"
 
-    try:
-        validate_residue_range(args.pdb, args.range)
-        asphericity = calculate_asphericity(args.pdb)
-        normed_rg, packing_density = calculate_globularity_metrics(args.pdb, args.range)
-        process_results(model_id, asphericity, normed_rg, packing_density, output_file)
-
-    except Exception as e:
-        log.error(f"An error occured {e}")
-        sys.exit(1)
+    validate_residue_range(args.pdb, args.range)
+    asphericity = calculate_asphericity(args.pdb, args.range)
+    normed_rg, packing_density = calculate_globularity_metrics(args.pdb, args.range)
+    process_results(model_id, asphericity, normed_rg, packing_density, output_file)
 
 if __name__ == "__main__":
     main()
