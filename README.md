@@ -11,7 +11,8 @@ This repository provides accessory tools associated with papers and activities o
 - **get_second_sphere_residues.py** Python script designed to identify the second coordination sphere residues of catalytic residues provided as input.
   *"From Structure to Function: Interpreting the Effects of DNA Polymerase Variants in Cancer"*
 - **alphafill_cofactor_survey** Python script querying AlphaFill for a Uniprot AC or a list of Uniprot AC's to find and list potential cofactors.
-
+- **globcheck**: A tool for collecting 3 metrics of globularity (ashpericity, normalised radius of gyration, packing density) of a protein structure. Developed for a study currently under review at *Journal of Molecular Biology (JMB)*:  
+  *“Deciphering Long-Range Effects of Mutations: An Integrated Approach Using Elastic Network Models and Protein Structure Networks.”*  
  
 ## Citations  
 
