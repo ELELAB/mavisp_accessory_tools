@@ -136,9 +136,9 @@ def process_results(model_id, asphericity, normed_rg, packing_density, output_fi
     df = pd.DataFrame([result])
 
     df['satisfies_thresholds'] = (
-        (df['asphericity'] < asphericity_threshold) &
-        (df['normalized_radius_gyration'] < rg_threshold) &
-        (df['packing_density'] > pd_threshold))
+    (df['asphericity'] < asphericity_threshold).astype(int) +
+    (df['normalized_radius_gyration'] < rg_threshold).astype(int) +
+    (df['packing_density'] > pd_threshold).astype(int)) >= 2
 
     df.to_csv(output_file, index=False, float_format="%.3f")
     log.info(f"✅ Final results written to {output_file}")
