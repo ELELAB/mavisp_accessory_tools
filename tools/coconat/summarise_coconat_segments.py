@@ -12,13 +12,36 @@ import pandas as pd
 import argparse
 
 def summarise_segments(input_file, output_file):
-    df = pd.read_csv(input_file, sep='\t')
+    try:
+        df = pd.read_csv(input_file, sep='\t')
+    except FileNotFoundError:
+        print(f"Error: Input file '{input_file}' not found.")
+        return
+    except pd.errors.ParserError:
+        print(f"Error: Failed to parse the input file '{input_file}'. Check if it's a valid TSV.")
+        return
+    except Exception as e:
+        print(f"Unexpected error while reading '{input_file}': {e}")
+        return
+
+    # Check if file is empty
+    if df.empty:
+        print(f"Error: Input file '{input_file}' is empty.")
+        return
+
+    # Check for expected columns
+    expected_columns = {'ID', 'CC_CLASS', 'OligoState', 'POligo'}
+    missing_cols = expected_columns - set(df.columns)
+    if missing_cols:
+        print(f"Error: Input file '{input_file}' is missing expected columns: {missing_cols}")
+        return
 
     summaries = []
     start_pos = None
     oligo_state = None
     poligo = None
     protein_id = None
+
 
     for idx, row in df.iterrows():
         if row['CC_CLASS'] != 'i':
@@ -32,7 +55,7 @@ def summarise_segments(input_file, output_file):
                 end_pos = idx
                 summaries.append({
                     'ID': protein_id,
-                    'RES_RANGE': f"{start_pos}-{end_pos}",
+                    'ResRange': f"{start_pos}-{end_pos}",
                     'OligoState': oligo_state,
                     'POligo': poligo
                 })
@@ -42,10 +65,16 @@ def summarise_segments(input_file, output_file):
         end_pos = len(df)
         summaries.append({
             'ID': protein_id,
-            'RES_RANGE': f"{start_pos}-{end_pos}",
+            'ResRange': f"{start_pos}-{end_pos}",
             'OligoState': oligo_state,
             'POligo': poligo
-        })
+     })
+
+
+    # Check if any segments were found
+    if not summaries:
+        print(f"Warning: No coiled-coil segments found in '{input_file}'. Output file will not be created.")
+        return
 
     summary_df = pd.DataFrame(summaries)
     summary_df.to_csv(output_file, sep='\t', index=False)
@@ -53,8 +82,8 @@ def summarise_segments(input_file, output_file):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Summarise CoCoNat coiled-coil segments.")
-    parser.add_argument('--input_file', required=True, help='Path to CoCoNat TSV output')
-    parser.add_argument('--output_file', required=True, help='Path to save the summary TSV')
+    parser.add_argument('-i','--input_file', required=True, help='Path to CoCoNat TSV output')
+    parser.add_argument('-o','--output_file', required=True, help='Path to save the summary TSV')
 
     args = parser.parse_args()
 
