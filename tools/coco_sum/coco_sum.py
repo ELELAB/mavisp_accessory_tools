@@ -4,37 +4,28 @@
 This script reads a CoCoNat prediction output TSV file and summarises the coiled-coil segments.
 For each segment, it reports the residue range, predicted oligomeric state, and its probability.
 
-Usage:
-    python summarise_coconat_segments.py --input_file=path/to/input.tsv --output_file=path/to/output.tsv
 """
 
-import pandas as pd
+import sys
 import argparse
+import pandas as pd
 
 def summarise_segments(input_file, output_file):
+    # Read input file
     try:
         df = pd.read_csv(input_file, sep='\t')
     except FileNotFoundError:
-        print(f"Error: Input file '{input_file}' not found.")
-        return
-    except pd.errors.ParserError:
-        print(f"Error: Failed to parse the input file '{input_file}'. Check if it's a valid TSV.")
-        return
-    except Exception as e:
-        print(f"Unexpected error while reading '{input_file}': {e}")
-        return
+        sys.exit(f"Error: Input file '{input_file}' not found.")
 
     # Check if file is empty
     if df.empty:
-        print(f"Error: Input file '{input_file}' is empty.")
-        return
+        sys.exit(f"Error: Input file '{input_file}' is empty.")
 
     # Check for expected columns
     expected_columns = {'ID', 'CC_CLASS', 'OligoState', 'POligo'}
-    missing_cols = expected_columns - set(df.columns)
-    if missing_cols:
-        print(f"Error: Input file '{input_file}' is missing expected columns: {missing_cols}")
-        return
+    if not expected_columns.issubset(df.columns):
+        missing_cols = expected_columns - set(df.columns)
+        sys.exit(f"Error: Input file '{input_file}' is missing expected columns: {missing_cols}")
 
     summaries = []
     start_pos = None
@@ -42,7 +33,7 @@ def summarise_segments(input_file, output_file):
     poligo = None
     protein_id = None
 
-
+    # Identify CC segments 
     for idx, row in df.iterrows():
         if row['CC_CLASS'] != 'i':
             if start_pos is None:
@@ -61,6 +52,7 @@ def summarise_segments(input_file, output_file):
                 })
                 start_pos = None
 
+    # Handle segments at end of file
     if start_pos is not None:
         end_pos = len(df)
         summaries.append({
@@ -70,21 +62,22 @@ def summarise_segments(input_file, output_file):
             'POligo': poligo
      })
 
-
-    # Check if any segments were found
+    # Check if output is empty
     if not summaries:
-        print(f"Warning: No coiled-coil segments found in '{input_file}'. Output file will not be created.")
-        return
+        sys.exit(f"Warning: No coiled-coil segments found in '{input_file}'. \
+                 Output file will not be created.")
 
+    # Write results to file
     summary_df = pd.DataFrame(summaries)
     summary_df.to_csv(output_file, sep='\t', index=False)
     print(f"Summary written to: {output_file}")
 
-if __name__ == "__main__":
+def parse_arguments():
     parser = argparse.ArgumentParser(description="Summarise CoCoNat coiled-coil segments.")
-    parser.add_argument('-i','--input_file', required=True, help='Path to CoCoNat TSV output')
-    parser.add_argument('-o','--output_file', required=True, help='Path to save the summary TSV')
+    parser.add_argument('-i','--input_file', required=True, help='Path to CoCoNat output')
+    parser.add_argument('-o','--output_file', required=True, help='Path to save the summary file')
+    return parser.parse_args()
 
-    args = parser.parse_args()
-
+if __name__ == "__main__":
+    args = parse_arguments()
     summarise_segments(args.input_file, args.output_file)
