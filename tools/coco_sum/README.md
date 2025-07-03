@@ -21,7 +21,7 @@ The output is formatted as a tab-separated file for easy integration with other 
 ## Requirements
 - python >= 3.7
 - pandas
-- CocoNat (see https://github.com/BolognaBiocomp/coconat)
+- CoCoNat (see https://github.com/BolognaBiocomp/coconat)
 
 ## Usage
 usage: coco_sum.py [-h] -i INPUT_FILE -o OUTPUT_FILE
