@@ -17,6 +17,9 @@ This repository provides accessory tools associated with papers and activities o
   *“Deciphering Long-Range Effects of Mutations: An Integrated Approach Using Elastic Network Models and Protein Structure Networks.”*  
 - **coco_sum**: A tool for collecting and parsing coiled-coil predictions using external predictor CoCoNat (https://github.com/BolognaBiocomp/coconat). Developed for a study currently under review at *Journal of Molecular Biology (JMB)*:  
   *“Deciphering Long-Range Effects of Mutations: An Integrated Approach Using Elastic Network Models and Protein Structure Networks.”*  
+- **af\_tools**: A directory containing utilities to generate or process AlphaFold model structures for downstream local interaction analysis. More specifically:
+	1. mavisp\_af3: a toolkit for processing the .zip package obtained from the AlphaFold3 server. It converts the predicted structures from .cif to .pdb, computes pdockq2 scores for multi-chain models, and outputs a summary table collecting all available confidence metrics for each generated structure.
+	2. mavisp\_afmultimer: a toolkit that generates protein complex structures with AlphaFold-Multimer from provided FASTA sequences, computes pdockq2 scores, and outputs a summary table of confidence metrics in the same format as mavisp\_af3.
   
 ## Citations  
 
