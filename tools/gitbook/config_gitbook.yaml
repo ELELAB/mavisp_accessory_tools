@@ -1,0 +1,95 @@
+gene_name: ARID3A
+uniprot_ac: Q99856
+refseq_id: NP_005215
+date_aggregated_dataset: 2024-09-13
+date_eve_run: N.A.
+mavisp_mode: [SIMPLE, ENSEMBLE]
+structure_source: PDB
+trimmed_models_default: ["45-325"]
+trimmed_models_allosigma: ["45-325"]
+structure_local_interaction: "AF2 model or PDB"
+date_af_model_download: 2024-08-01
+date_cancermuts_run: 2024-08-15
+date_mentha2pdb_database: 2025-04-28
+
+curators:
+  Elena Papaleo:
+    affiliation:
+      - DCI, Denmark
+      - DTU, Denmark
+  Karolina Krzesińska:
+    affiliation:
+      - DTU, Denmark
+      - DCI, Denmark
+
+reviewers:
+  Reviewer One:
+    affiliation:
+      - University A
+  Reviewer Two:
+    affiliation:
+      - Institute B
+
+reference_databases:
+  GeneCards: https://www.genecards.org/cgi-bin/carddisp.pl?gene=ARID3A
+  UniProt: https://www.uniprot.org/uniprotkb/Q99856/entry
+  NCBI: https://www.ncbi.nlm.nih.gov/gene/23462
+  HumanProteinAtlas: https://www.proteinatlas.org/search/ARID3A
+  AllianceGenome: https://www.alliancegenome.org/gene/HGNC:659
+  MAVEDatabase: N.A.
+  G2P: https://g2p.broadinstitute.org/gene/ARID3A/protein/Q99856
+
+procheck:
+  ramachandran:
+    core: 90.2%
+    allow: 8.9%
+    gener: 0.5%
+    disall: 0.5%
+  bad_contacts: 0
+
+allosigma_parameters:
+  rSAS_cutoff: 25
+  free_energy_cutoff: 2
+  distance_cutoff: 5.5
+  distance_method: atomic_contacts
+
+functional_sites:
+  active_site: ["123", "145"]
+  substrate_binding: ["165", "189"]
+  cofactor_binding:
+    cofactor: Zn2+
+    residues: ["201", "204"]
+
+slims:
+  LIR:
+    present: true
+    motifs:
+      - positions: 122-126
+        accessibility: 18%
+        notes: "Near disordered loop"
+  BH3:
+    present: false
+    motifs: []
+  UIM:
+    present: true
+    motifs:
+      - positions: 77-84
+        notes: "Candidate UIM motif based on sequence and surface exposure"
+  BRCT:
+    present: true
+    motifs:
+      - positions: 308-312
+        nuclear_localization_probability: 0.92
+        phosphosites:
+          - position: S309
+            kinases: ["CaM-II", "cdc2", "GSK3", "PKG"]
+        interactors: ["TP53BP1"]
+        notes: "Validated phosphosite and predicted interaction with BRCT domain"
+
+# Ensemble-specific data (to be in a separate YAML if needed)
+ensemble_sources: [AFDB]
+ensemble_size_foldx: [20, 50]
+ensemble_size_rosetta: [3, 3]
+simulation_length: [1000]
+simulation_force_field: [CHARMM22*]
+ensemble_trimmed_regions: ["436-508"] 
