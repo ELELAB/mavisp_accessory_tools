@@ -1,0 +1,2 @@
+sensitivity,specificity,accuracy,precision,F1 score
+0.875,0.125,0.5,0.5,0.636

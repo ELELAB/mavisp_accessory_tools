@@ -1,0 +1,48 @@
+modes:
+  simple:
+    experimental_column: "Experimental data (DHFR-PCA yeast, Stability (MAVEdb))"
+    experimental_column_classification: "Experimental data classification (DHFR-PCA yeast, Stability (MAVEdb))"
+    experimental_thresholds: [-1,-0.161,1]
+    normalization:
+      Damaging:
+        - "Damaging"
+        - "damaging"
+        - "Destabilizing"
+        - "destabilizing"
+        - "pathogenic"
+        - "Pathogenic"
+      Neutral:
+        - "Neutral"
+        - "neutral"
+        - "Benign"
+        - "benign"
+      Uncertain:
+        - "Uncertain"
+        - "uncertain"
+    comparisons:
+      - name: "RaSP-FoldX_consensus_with_GEMME_local"
+        columns: ["Stability classification, alphafold, (RaSP, FoldX)", "GEMME classification", "Local Int. classification (PMS2_AFmulti)"]
+        priority:
+          class_order: ["Damaging", "Neutral"]
+          priority_for_classification:
+            Damaging: ["GEMME classification", "Stability classification, alphafold, (RaSP, FoldX)"]
+            Neutral:  ["GEMME classification", "Stability classification, alphafold, (RaSP, FoldX)"]
+      - name: "RaSP-FoldX_consensus_with_DeMaSK_local"
+        columns: ["Stability classification, alphafold, (RaSP, FoldX)", "DeMaSk classification", "Local Int. classification (PMS2_AFmulti)"]
+        priority:
+          class_order: ["Damaging", "Neutral"]
+          priority_for_classification:
+            Damaging: ["DeMaSk classification", "Stability classification, alphafold, (RaSP, FoldX)", "Local Int. classification (PMS2_AFmulti)"]
+            Neutral:  ["DeMaSk classification", "Stability classification, alphafold, (RaSP, FoldX)","Local Int. classification (PMS2_AFmulti)"]
+        weighted:
+          weights:
+            "DeMaSk classification": 0.4
+            "Stability classification, alphafold, (RaSP, FoldX)": 0.3
+            "Local Int. classification (PMS2_AFmulti)": 0.3 
+          threshold: 0.5
+        voting:
+          target_class: "Damaging"
+          logic: "majority"
+          fallback: "Neutral"
+          handle_uncertain: "return_uncertain"
+

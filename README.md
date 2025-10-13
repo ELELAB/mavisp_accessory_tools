@@ -21,6 +21,7 @@ This repository provides accessory tools associated with papers and activities o
 	1. mavisp\_af3: a toolkit for processing the .zip package obtained from the AlphaFold3 server. It converts the predicted structures from .cif to .pdb, computes pdockq2 scores for multi-chain models, and outputs a summary table collecting all available confidence metrics for each generated structure.
 	2. mavisp\_afmultimer: a toolkit that generates protein complex structures with AlphaFold-Multimer from provided FASTA sequences, computes pdockq2 scores, and outputs a summary table of confidence metrics in the same format as mavisp\_af3.
 - **uniprot2refseq**: a script to retrieve the correct refseq ID given a uniprot ID - to use before the mavisp_automatization step to ensure the proper match between identifiers
+- **MAVISpBenchmark** MAVISpBenchmark.py provides a comprehensive framework for analyzing and comparing MAVISp classifications and variant effect predictors (currently GEMME and DeMaSK) against experimental data. The script can operate either by using MAVISp classification columns directly or by combining multiple columns to generate ensemble classifications. The combination logic is fully configurable through a YAML file, which supports three alternative approaches—voting, priority, and weighted schemes—allowing for a flexible and detailed classification system tailored to specific analytical needs.
   
 ## Citations  
 

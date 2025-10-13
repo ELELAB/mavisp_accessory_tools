@@ -1,0 +1,17 @@
+,protein,Mutation,"Stability classification, alphafold, (RaSP, FoldX)","Experimental data classification (DHFR-PCA yeast, Stability (MAVEdb))","Experimental data (DHFR-PCA yeast, Stability (MAVEdb))",DeMaSk delta fitness,GEMME Score,Local Int. classification (PMS2_AFmulti),Relative Side Chain Solvent Accessibility in wild-type,Mut_res,wt_res_position,Position,GEMME classification,DeMaSk classification,RaSP-FoldX_consensus_with_GEMME_local_priority,RaSP-FoldX_consensus_with_DeMaSK_local_voting,RaSP-FoldX_consensus_with_DeMaSK_local_priority,RaSP-FoldX_consensus_with_DeMaSK_local_weighted
+3,test,H50M,Damaging,Damaging,-0.998593243402809,-0.1588468841129663,0.8560932142605653,Neutral,20,M,H50,50,Neutral,Neutral,Damaging,Neutral,Damaging,Neutral
+4,test,P44H,Damaging,Neutral,0.3767558319512597,-0.4658575818770757,-4.986566986228106,Damaging,20,H,P44,44,Damaging,Damaging,Damaging,Damaging,Damaging,Damaging
+5,test,Y44F,Damaging,Neutral,-0.0501824586466818,-0.3785292512407085,-0.2023682565158941,Neutral,20,F,Y44,44,Neutral,Damaging,Damaging,Damaging,Damaging,Damaging
+6,test,K20D,Damaging,Neutral,0.6371370383946783,0.1510999845000993,-4.528905844781005,Damaging,20,D,K20,20,Damaging,Neutral,Damaging,Damaging,Damaging,Damaging
+11,test,L1A,Damaging,Damaging,-0.1979900946385598,0.0288808485661375,2.153271501206184,Neutral,20,A,L1,1,Neutral,Neutral,Damaging,Neutral,Damaging,Neutral
+12,test,H3G,Damaging,Neutral,-0.0598036353722254,-0.4246044413718888,-4.69821421785013,Damaging,20,G,H3,3,Damaging,Damaging,Damaging,Damaging,Damaging,Damaging
+13,test,D37P,Damaging,Neutral,0.36664692422511,-0.4094545805223015,1.237884481755286,Neutral,20,P,D37,37,Neutral,Damaging,Damaging,Damaging,Damaging,Damaging
+14,test,F48L,Damaging,Neutral,0.3173533213673072,-0.1963804686524297,-3.876805130951463,Damaging,20,L,F48,48,Damaging,Neutral,Damaging,Damaging,Damaging,Damaging
+17,test,A32N,Neutral,Damaging,-0.4212454418294219,-0.2921331326574343,0.6357300840986171,Neutral,20,N,A32,32,Neutral,Damaging,Neutral,Neutral,Damaging,Neutral
+18,test,E39W,Neutral,Damaging,-0.5353579982689727,0.0470734351833524,-4.883273998489387,Damaging,20,W,E39,39,Damaging,Neutral,Damaging,Neutral,Damaging,Neutral
+19,test,I41S,Neutral,Damaging,-0.6912392907322666,-0.0884927076041201,-0.5619626372673805,Neutral,20,S,I41,41,Neutral,Neutral,Neutral,Neutral,Neutral,Neutral
+20,test,P19I,Neutral,Neutral,0.9799280219318778,-0.3501649112752728,-3.4106096833519564,Damaging,20,I,P19,19,Damaging,Damaging,Damaging,Damaging,Damaging,Damaging
+25,test,N41V,Neutral,Damaging,-0.994865351166023,-0.4193790411700899,-2.7674185937144364,Neutral,20,V,N41,41,Neutral,Damaging,Neutral,Neutral,Damaging,Neutral
+26,test,T2S,Neutral,Damaging,-0.2779951359078824,0.0739089459286583,-3.489098671741628,Damaging,20,S,T2,2,Damaging,Neutral,Damaging,Neutral,Damaging,Neutral
+27,test,H14P,Neutral,Damaging,-0.4768551501441169,-0.2140586217501936,0.5262383574443557,Neutral,20,P,H14,14,Neutral,Neutral,Neutral,Neutral,Neutral,Neutral
+28,test,S49V,Neutral,Neutral,0.5565686731350925,-0.3454096969634498,-4.034562362338098,Damaging,20,V,S49,49,Damaging,Damaging,Damaging,Damaging,Damaging,Damaging
