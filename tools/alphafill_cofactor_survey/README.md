@@ -80,3 +80,11 @@ python ../../annotate_heteroatoms.py -d ../../cofactors_dict.json -c ../find_cof
 1) A csv with all your heteroatoms annotated with the json dictionary, "all_heteroatoms_annotated.csv ". If the heteroatom is not in the list it is annotated as "not a cofactor". The remaining columns contain annotations downloaded from PDB.
 2) A list of only the heteroatoms that were cofactors (according to the json dictionary), "cofactor_only.txt".  
 
+## **New Feature: PDB Ligand Analysis**
+
+Added ability to analyze PDB files for ligand contacts:
+- Finds ligands/ions and their contacting residues within 4Å
+- Categorizes as "inside trim", "cross boundary", or "outside trim" 
+- Classifies as "ion", "cofactor", or "other ligand"
+- Works alongside existing AlphaFill functionality
+**Usage:** `python find_cofactor.py --pdb structure.pdb --start 853 --end 902`
