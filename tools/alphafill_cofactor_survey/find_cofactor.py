@@ -20,13 +20,12 @@
 import argparse
 import requests
 import sys
-import csv
 import os
+import json
 import pandas as pd
-
-# ====== NEW IMPORTS ======
-from Bio.PDB import PDBParser
 import numpy as np
+from Bio.PDB import PDBParser
+
 
 def fetch_cofactors(upid):
     """ Fetch cofactors from AlphaFill for one UniProt ID. Returns (status, list of cofactors or None) """
@@ -73,17 +72,41 @@ def load_filter_file(filepath):
     with open(filepath) as f:
         return set(line.strip().upper() for line in f if line.strip())
 
+def calculate_ligand_contacts(ligand, protein_residues):
+    """ Calculate minimum distance and contacts for a ligand """
+    min_distance = 100.0
+    contacts = []
+
+    for ligand_atom in ligand:
+        for protein_res in protein_residues:
+            for protein_atom in protein_res:
+                distance = np.linalg.norm(ligand_atom.coord - protein_atom.coord)
+                if distance < 4.0:
+                    contact_str = f"{protein_res.resname}{protein_res.id[1]}"
+                    if contact_str not in contacts:
+                        contacts.append(contact_str)
+                if distance < min_distance:
+                    min_distance = distance
+    return min_distance, contacts
+
 def main():
+
+    try:
+	with open('cofactors_dict.json', 'r') as f:
+            cofactors_data = json.load(f)
+        cofactor_list = set(cofactor.upper() for cofactor in cofactors_data.keys())
+    except FileNotFoundError:
+        print("Warning: cofactors_dict.json not found, using basic classification")
+        cofactor_list = set()
+
     parser = argparse.ArgumentParser(description="Query AlphaFill for cofactors, with optional filtering.")
     parser.add_argument("-u", help="Single UniProt ID")
     parser.add_argument("-i", help="Index file with dataset, should have column 'UniProt AC'")
     parser.add_argument("-f", "--filter", help="Optional file with valid cofactor IDs")
     parser.add_argument("-o", "--output", default="summary_output", help="Output file prefix")
-
-# ======== ADDING PDB ARGUMENTS ========
-    parser.add_argument("--pdb", help="PDB file to analyze for ligands")
-    parser.add_argument("--start", type=int, help="Start residue of trimmed region")
-    parser.add_argument("--end", type=int, help="End residue of trimmed region")
+    parser.add_argument("-p", "--pdb", help="PDB file to analyze for ligands")
+    parser.add_argument("-s", "--start", type=int, help="Start residue of trimmed region")
+    parser.add_argument("-e", "--end", type=int, help="End residue of trimmed region")
 
     args = parser.parse_args()
 
@@ -95,91 +118,76 @@ def main():
         print("Error: Provide either -u or -i, not both.")
         sys.exit(1)
 
-# ======== PDB ANALYSIS ========
+    pdb_results = None
+
     if args.pdb:
         if not os.path.exists(args.pdb):
             print(f"Error: PDB file {args.pdb} not found")
             sys.exit(1)
         if args.start is None or args.end is None:
-            print("Error: --start and --end required when using --pdb")
+            print("Error: -s and -e required when using -p")
             sys.exit(1)
 
         print(f"Analyzing PDB file: {args.pdb}")
         print(f"Residue range: {args.start}-{args.end}")
 
-# PDB reading - get structures
+
         parser = PDBParser(QUIET=True)
         structure = parser.get_structure('protein', args.pdb)
-        results = []
-
         model = structure[0]
 
+
+        protein_residues = []
+        ligands = []
         for chain in model:
             for residue in chain:
-                if residue.id[0] != ' ' and residue.id[0] != 'W':
-                    contacts = []
-                    min_distance = 100.0
+                if residue.id[0] == ' ':
+                    protein_residues.append(residue)
+                elif residue.id[0] != 'W':
+                    ligands.append(residue)
 
-                    # Compare ligand atoms to all protein atoms
-                    for ligand_atom in residue:
-                        for chain2 in model:
-                            for protein_res in chain2:
-                                # Skip if it is the same
-                                if protein_res == residue or protein_res.id[0] != ' ':
-                                    continue
-                                    
-                                for protein_atom in protein_res:
-                                    # Calculate distance
-                                    distance = np.linalg.norm(ligand_atom.coord - protein_atom.coord)
-                                    
-                                    # Check if within 4Å cutoff
-                                    if distance < 4.0:
-                                        contact_str = f"{protein_res.resname}{protein_res.id[1]}"
-                                        if contact_str not in contacts:  
-                                            contacts.append(contact_str)
-                                    
-                                    # Track shortest distance
-                                    if distance < min_distance:
-                                        min_distance = distance
-                    
-                    # Categorize based on contact residues
-                    inside_count = 0
-                    for contact in contacts:
-                        # Extract residue number
-                        res_num = int(''.join(filter(str.isdigit, contact)))
-                        if args.start <= res_num <= args.end:
-                            inside_count += 1
-                    
-                    # Categorization
-                    if inside_count == len(contacts) and inside_count > 0:
-                        category = "inside trim"
-                    elif inside_count > 0 and inside_count < len(contacts):
-                        category = "cross boundary"
-                    elif inside_count == 0 and len(contacts) > 0:
-                        category = "outside trim"
-                    else:
-                        category = "no contacts"
-                    
-                    # Ligand types
-                    ligand_name = residue.resname.upper()
-                    if ligand_name in ['NA', 'K', 'CL', 'CA', 'MG', 'ZN', 'FE']:
-                        ligand_type = "ion"
-                    elif ligand_name in ['ATP', 'ADP', 'GMP', 'GDP', 'NAP', 'NAD', 'FAD']:
-                        ligand_type = "cofactor"
-                    else:
-                        ligand_type = "other ligand"
-                    
-                    results.append({
-                        'ligand_id': f"{residue.resname}_{chain.id}_{residue.id[1]}",
-                        'resname': residue.resname,
-                        'chain': chain.id, 
-                        'residue_number': residue.id[1],
-                        'contact_residues': ';'.join(contacts),
-                        'contact_count': len(contacts),
-                        'shortest_distance': round(min_distance, 2),
-                        'location_category': category,
-                        'biological_label': ligand_type
-                    })
+        pdb_results = []
+
+
+        for ligand in ligands:
+            min_distance, contacts = calculate_ligand_contacts(ligand, protein_residues)
+
+            inside_count = 0
+            for contact in contacts:
+                res_num = int(''.join(filter(str.isdigit, contact)))
+                if args.start <= res_num <= args.end:
+                    inside_count += 1
+
+            if inside_count == len(contacts) and inside_count > 0:
+                category = "inside trim"
+            elif inside_count > 0 and inside_count < len(contacts):
+                category = "cross boundary"
+            elif inside_count == 0 and len(contacts) > 0:
+                category = "outside trim"
+            else:
+                category = "no contacts"
+
+            ligand_name = ligand.resname.upper()
+
+            if ligand_name in cofactor_list:
+                ligand_type = "cofactor"
+            else:
+                if ligand_name in ['NA', 'K', 'CL', 'CA', 'MG', 'ZN', 'FE']:
+                    ligand_type = "ion"
+                else:
+                    ligand_type = "other ligand"
+
+            pdb_results.append({
+                'ligand_id': f"{ligand.resname}_{ligand.parent.id}_{ligand.id[1]}",
+                'resname': ligand.resname,
+                'chain': ligand.parent.id, 
+                'residue_number': ligand.id[1],
+                'contact_residues': ';'.join(contacts),
+                'contact_count': len(contacts),
+                'shortest_distance': round(min_distance, 2),
+                'location_category': category,
+                'biological_label': ligand_type
+            })
 
     upids =[args.u] if args.u else pd.read_csv(args.i)['Uniprot AC'].dropna().astype(str).tolist()
     filter_set = load_filter_file(args.filter) if args.filter else None
@@ -216,34 +224,23 @@ def main():
             filtered_rows.append([upid, ' '.join(matched) if matched else "None"])
 
     # Write output files
-    with open(out_all, "w", newline='') as f:
-        writer = csv.writer(f)
-        writer.writerow(["protein", "heteroatoms"])
-        writer.writerows(all_rows)
+     df_all = pd.DataFrame(all_rows, columns=["protein", "heteroatoms"])
+     df_all.to_csv(out_all, index=False)
 
-    if filter_set:
-        with open(out_filtered, "w", newline='') as f:
-            writer = csv.writer(f)
-            writer.writerow(["protein", "cofactors"])
-            writer.writerows(filtered_rows)
+     if filter_set:
+        df_filtered = pd.DataFrame(filtered_rows, columns=["protein", "cofactors"])
+        df_filtered.to_csv(out_filtered, index=False)
 
-    with open(out_unique, "w") as f:
+     with open(out_unique, "w") as f:
         for c in sorted(unique_heteroatoms):
             f.write(c + "\n")
 
-    # Write ligand results to CSV
-    if args.pdb and 'results' in locals() and results:
+     if args.pdb and pdb_results is not None:
         ligand_output = f"{args.output}_ligand_contacts.csv"
-        with open(ligand_output, "w", newline='') as f:
-            writer = csv.writer(f)
-            writer.writerow(["ligand_id", "resname", "chain", "residue_number", "contact_residues", 
-                           "contact_count", "shortest_distance", "location_category", "biological_label"])
-            for r in results:
-                writer.writerow([r['ligand_id'], r['resname'], r['chain'], r['residue_number'], 
-                               r['contact_residues'], r['contact_count'], r['shortest_distance'],
-                               r['location_category'], r['biological_label']])
+        df_ligands = pd.DataFrame(pdb_results)
+        df_ligands.to_csv(ligand_output, index=False)
 
-        print(f"Ligand analysis complete: {len(results)} ligands found")
+        print(f"Ligand analysis complete: {len(pdb_results)} ligands found")
         print(f"Results saved to: {ligand_output}")
 
 if __name__ == "__main__":
