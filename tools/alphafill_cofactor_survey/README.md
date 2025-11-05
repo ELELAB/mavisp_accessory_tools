@@ -82,9 +82,13 @@ python ../../annotate_heteroatoms.py -d ../../cofactors_dict.json -c ../find_cof
 
 ## **New Feature: PDB Ligand Analysis**
 
-Added ability to analyze PDB files for ligand contacts:
-- Finds ligands/ions and their contacting residues within 4Å
-- Categorizes as "inside trim", "cross boundary", or "outside trim" 
-- Classifies as "ion", "cofactor", or "other ligand"
-- Works alongside existing AlphaFill functionality
-**Usage:** `python find_cofactor.py --pdb structure.pdb --start 853 --end 902`
+New arguments: -p/--pdb, -s/--start, -e/--end for PDB file analysis
+Finds ligand contacts within 4Å and categorizes as inside/cross/outside trimmed regions
+Classifies ligands using cofactors_dict.json
+Outputs detailed CSV with contacts, distances, and classifications
+
+## **Improvements after first round of revision**
+
+Refactored nested loops into simpler approach
+Used pandas for all CSV output
+Better variable handling and error checking
