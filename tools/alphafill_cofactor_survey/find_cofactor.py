@@ -91,14 +91,6 @@ def calculate_ligand_contacts(ligand, protein_residues):
 
 def main():
 
-    try:
-	with open('cofactors_dict.json', 'r') as f:
-            cofactors_data = json.load(f)
-        cofactor_list = set(cofactor.upper() for cofactor in cofactors_data.keys())
-    except FileNotFoundError:
-        print("Warning: cofactors_dict.json not found, using basic classification")
-        cofactor_list = set()
-
     parser = argparse.ArgumentParser(description="Query AlphaFill for cofactors, with optional filtering.")
     parser.add_argument("-u", help="Single UniProt ID")
     parser.add_argument("-i", help="Index file with dataset, should have column 'UniProt AC'")
@@ -107,8 +99,19 @@ def main():
     parser.add_argument("-p", "--pdb", help="PDB file to analyze for ligands")
     parser.add_argument("-s", "--start", type=int, help="Start residue of trimmed region")
     parser.add_argument("-e", "--end", type=int, help="End residue of trimmed region")
+    parser.add_argument("-c", "--cofactors", help="JSON file with cofactor definitions")
 
     args = parser.parse_args()
+
+    cofactor_list = set()
+    if args.cofactors:
+        try:
+            with open(args.cofactors, 'r') as f:
+                cofactors_data = json.load(f)
+            cofactor_list = set(cofactor.upper() for cofactor in cofactors_data.keys())
+        except FileNotFoundError:
+            print(f"Warning: {args.cofactors} not found, using basic classification")
+            cofactor_list = set()
 
     if not args.u and not args.i:
         print("Error: Provide either -u or -i")
@@ -142,40 +145,30 @@ def main():
         for chain in model:
             for residue in chain:
                 if residue.id[0] == ' ':
-                    protein_residues.append(residue)
+                    res_num = residue.id[1]
+                    if args.start <= res_num <= args.end:
+                        protein_residues.append(residue)
                 elif residue.id[0] != 'W':
                     ligands.append(residue)
-
         pdb_results = []
 
 
         for ligand in ligands:
             min_distance, contacts = calculate_ligand_contacts(ligand, protein_residues)
 
-            inside_count = 0
-            for contact in contacts:
-                res_num = int(''.join(filter(str.isdigit, contact)))
-                if args.start <= res_num <= args.end:
-                    inside_count += 1
-
-            if inside_count == len(contacts) and inside_count > 0:
-                category = "inside trim"
-            elif inside_count > 0 and inside_count < len(contacts):
-                category = "cross boundary"
-            elif inside_count == 0 and len(contacts) > 0:
-                category = "outside trim"
-            else:
+            if len(contacts) == 0:
                 category = "no contacts"
+            else:
+                category = "inside trim"
 
             ligand_name = ligand.resname.upper()
 
             if ligand_name in cofactor_list:
                 ligand_type = "cofactor"
+            elif ligand_name in ['NA', 'K', 'CL', 'CA', 'MG', 'ZN', 'FE']:
+                ligand_type = "ion"
             else:
-                if ligand_name in ['NA', 'K', 'CL', 'CA', 'MG', 'ZN', 'FE']:
-                    ligand_type = "ion"
-                else:
-                    ligand_type = "other ligand"
+                ligand_type = "other ligand"
 
             pdb_results.append({
                 'ligand_id': f"{ligand.resname}_{ligand.parent.id}_{ligand.id[1]}",
@@ -224,18 +217,18 @@ def main():
             filtered_rows.append([upid, ' '.join(matched) if matched else "None"])
 
     # Write output files
-     df_all = pd.DataFrame(all_rows, columns=["protein", "heteroatoms"])
-     df_all.to_csv(out_all, index=False)
+    df_all = pd.DataFrame(all_rows, columns=["protein", "heteroatoms"])
+    df_all.to_csv(out_all, index=False)
 
-     if filter_set:
+    if filter_set:
         df_filtered = pd.DataFrame(filtered_rows, columns=["protein", "cofactors"])
         df_filtered.to_csv(out_filtered, index=False)
 
-     with open(out_unique, "w") as f:
+    with open(out_unique, "w") as f:
         for c in sorted(unique_heteroatoms):
             f.write(c + "\n")
 
-     if args.pdb and pdb_results is not None:
+    if args.pdb and pdb_results is not None:
         ligand_output = f"{args.output}_ligand_contacts.csv"
         df_ligands = pd.DataFrame(pdb_results)
         df_ligands.to_csv(ligand_output, index=False)
