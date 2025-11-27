@@ -1,17 +1,20 @@
 #!/bin/bash
 
 # Check if the correct number of arguments is provided
-if [ "$#" -ne 2 ]; then
-    echo "Usage: $0 <chain_id> <cores>"
+if [ "$#" -ne 3 ]; then
+    echo "Usage: $0 <chain_id> <cores> <num_frames>"
     exit 1
 fi
 
 CHAIN_ID=$1
 CORES=$2
+NUM_FRAMES=$3
 
-# Define the list of directories
-directories=("cl1" "cl2" "cl3")
-# Each directory is supposed to contain a PDB file
+# Generate cluster directories dynamically
+directories=()
+for ((i=1; i<=NUM_FRAMES; i++)); do
+    directories+=("frame$i")
+done
 
 # Step 1: Add chain if missing
 add_chain() {
@@ -54,6 +57,7 @@ remove_end_lines() {
 
 for dir in "${directories[@]}"; do
     # Check if the directory exists
+    echo "=== Processing cluster: $dir ==="
     if [ -d "$dir" ]; then
         cd "$dir"
 
@@ -79,9 +83,9 @@ for dir in "${directories[@]}"; do
 
         echo "Processing complete. Output written to $OUTPUT_PDB"
 
-        # Load conda environment
-        source /usr/local/miniconda3/etc/profile.d/conda.sh
-        conda activate /usr/local/envs/RaSP_workflow
+        # Load RaSP conda environment
+#        source /usr/local/miniconda3/etc/profile.d/conda.sh
+#        conda activate /usr/local/envs/RaSP_workflow
 
         # Run RaSP_workflow command
         RaSP_workflow -i $OUTPUT_PDB -r cpu -p /usr/local/envs/RaSP_workflow/RaSP_workflow/src/ -o . -n $CORES -c $CHAIN_ID
@@ -90,10 +94,11 @@ for dir in "${directories[@]}"; do
         RaSP_postprocess -i output/predictions/*
 
         # Deactivate environment
-        conda deactivate /usr/local/envs/RaSP_workflow
+#        conda deactivate
 
         cd - > /dev/null
     else
         echo "Directory $dir does not exist. Skipping commands."
     fi
 done
+
