@@ -40,7 +40,7 @@ remove_solvent_and_hydrogen() {
 
 # Step 3: Fix amino acid names (specific to histidine and others if needed)
 fix_amino_acid_names() {
-    sed -E 's/HIE/HIS/g; s/HID/HIS/g; s/HIP/HIS/g; s/LYN/LYS/g; s/ASH/ASP/g; s/GLH/GLU/g; s/CYX/CYS/g' "$1" > tmp_fixed_names.pdb
+    sed -E 's/HIE/HIS/g; s/HID/HIS/g; s/HIP/HIS/g; s/HISE/HIS/g; s/HISH/HIS/g; s/LYN/LYS/g; s/ASH/ASP/g; s/GLH/GLU/g; s/CYX/CYS/g' "$1" > tmp_fixed_names.pdb
 }
 
 # Step 4: Pad the file twice and ensure lines are 80 characters

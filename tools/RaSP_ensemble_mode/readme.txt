@@ -7,7 +7,7 @@
 # for each cluster - 
 # 1) Add chain if missing
 # 2) Remove solvent and hydrogens
-# 3) Fix aminoacid specific names: HIE/HIS, HID/HIS, HIP/HIS, LYN/LYS, ASH/ASP, GLH/GLU, CYX/CYS).
+# 3) Fix aminoacid specific names: HIE/HIS, HID/HIS, HIP/HIS, HISE/HIS, HISH/HIS, LYN/LYS, ASH/ASP, GLH/GLU, CYX/CYS).
 # 4) Ensure that each line contains the correct number of characters. 
 # 5) Remove END/TER/ENDMOL lines. 
 
