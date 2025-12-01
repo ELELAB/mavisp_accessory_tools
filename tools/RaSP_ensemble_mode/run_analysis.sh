@@ -40,7 +40,7 @@ remove_solvent_and_hydrogen() {
 
 # Step 3: Fix amino acid names (specific to histidine and others if needed)
 fix_amino_acid_names() {
-    sed -E 's/HIE/HIS/g; s/HID/HIS/g; s/HIP/HIS/g; s/HISE/HIS/g; s/HISH/HIS/g; s/LYN/LYS/g; s/ASH/ASP/g; s/GLH/GLU/g; s/CYX/CYS/g' "$1" > tmp_fixed_names.pdb
+    sed -E 's/HIE/HIS/g; s/HID/HIS/g; s/HIP/HIS/g; s/HISE/HIS/g; s/HISH/HIS/g; s/HISA/HIS/g; s/HISDA/HIS/g; s/LYN/LYS/g; s/ASH/ASP/g; s/GLH/GLU/g; s/CYX/CYS/g' "$1" > tmp_fixed_names.pdb
 }
 
 # Step 4: Pad the file twice and ensure lines are 80 characters
@@ -84,8 +84,8 @@ for dir in "${directories[@]}"; do
         echo "Processing complete. Output written to $OUTPUT_PDB"
 
         # Load RaSP conda environment
-#        source /usr/local/miniconda3/etc/profile.d/conda.sh
-#        conda activate /usr/local/envs/RaSP_workflow
+        source /usr/local/miniconda3/etc/profile.d/conda.sh
+        conda activate /usr/local/envs/RaSP_workflow
 
         # Run RaSP_workflow command
         RaSP_workflow -i $OUTPUT_PDB -r cpu -p /usr/local/envs/RaSP_workflow/RaSP_workflow/src/ -o . -n $CORES -c $CHAIN_ID
@@ -94,7 +94,7 @@ for dir in "${directories[@]}"; do
         RaSP_postprocess -i output/predictions/*
 
         # Deactivate environment
-#        conda deactivate
+        conda deactivate
 
         cd - > /dev/null
     else
