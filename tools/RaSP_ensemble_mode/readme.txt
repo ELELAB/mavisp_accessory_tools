@@ -18,12 +18,8 @@
 ./prepare_25frames.sh <25_frames_A.pdb>
 # Example: ./prepare_25frames.sh /data/user/shared_projects/mavisp/TPMT/simulations_analysis/free/AF2_18-245/replicate1/CHARMM36/md/5.ensemble_for_ddg_mutatex/25_frames_A.pdb
 
-#Exit the server
-exit
-#Re-enter the server
-#Activate environment manually
-source /usr/local/miniconda3/etc/profile.d/conda.sh
-conda activate /usr/local/envs/RaSP_workflow
+#Deactivate current env
+conda deactivate
 
 #Run analysis script 
 tsp -N 4 bash run_analysis.sh chain cores frames
