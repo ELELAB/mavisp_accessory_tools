@@ -1,0 +1,85 @@
+modes:
+  simple:
+    experimental_column: "Experimental data (DHFR-PCA yeast, Stability (MAVEdb))"
+    experimental_column_classification: "Experimental data classification (DHFR-PCA yeast, Stability (MAVEdb))"
+    experimental_thresholds: [-1,-0.161,1]
+    normalization:
+      Damaging:
+        - "Damaging"
+        - "damaging"
+        - "Destabilizing"
+        - "destabilizing"
+        - "pathogenic"
+        - "Pathogenic"
+      Neutral:
+        - "Neutral"
+        - "neutral"
+        - "Benign"
+        - "benign"
+      Uncertain:
+        - "Uncertain"
+        - "uncertain"
+    comparisons:
+      - name: "Rosetta-FoldX_consensus_with_GEMME"
+        columns: ["Stability classification, alphafold, (Rosetta, FoldX)", "GEMME classification"]
+        priority:
+          class_order: ["Damaging", "Neutral"]
+          priority_for_classification:
+            Damaging: ["GEMME classification", "Stability classification, alphafold, (Rosetta, FoldX)"]
+            Neutral:  ["GEMME classification", "Stability classification, alphafold, (Rosetta, FoldX)"]
+      - name: "Rosetta-FoldX_consensus_with_DeMaSK"
+        columns: ["Stability classification, alphafold, (Rosetta, FoldX)", "DeMaSk classification"]
+        priority:
+          class_order: ["Damaging", "Neutral"]
+          priority_for_classification:
+            Damaging: ["DeMaSk classification", "Stability classification, alphafold, (Rosetta, FoldX)"]
+            Neutral:  ["DeMaSk classification", "Stability classification, alphafold, (Rosetta, FoldX)"]
+      - name: "RaSP-FoldX_consensus_with_GEMME"
+        columns: ["Stability classification, alphafold, (RaSP, FoldX)", "GEMME classification"]
+        priority:
+          class_order: ["Damaging", "Neutral"]
+          priority_for_classification:
+            Damaging: ["GEMME classification", "Stability classification, alphafold, (RaSP, FoldX)"]
+            Neutral:  ["GEMME classification", "Stability classification, alphafold, (RaSP, FoldX)"]
+      - name: "RaSP-FoldX_consensus_with_DeMaSK"
+        columns: ["Stability classification, alphafold, (RaSP, FoldX)", "DeMaSk classification"]
+        priority:
+          class_order: ["Damaging", "Neutral"]
+          priority_for_classification:
+            Damaging: ["DeMaSk classification", "Stability classification, alphafold, (RaSP, FoldX)"]
+            Neutral:  ["DeMaSk classification", "Stability classification, alphafold, (RaSP, FoldX)"]
+      - name: "RaSP-FoldX_consensus_comparison"
+        columns: ["Stability classification, alphafold, (RaSP, FoldX)"]
+        priority:
+          class_order: ["Damaging", "Neutral"]
+          priority_for_classification:
+            Damaging: ["Stability classification, alphafold, (RaSP, FoldX)"]
+            Neutral:  ["Stability classification, alphafold, (RaSP, FoldX)"]
+  ensemble:
+    experimental_column: "Experimental data (DHFR-PCA yeast, Stability (MAVEdb))"
+    experimental_column_classification: "Experimental data classification (DHFR-PCA yeast, Stability (MAVEdb))"
+    experimental_thresholds: [-1,-0.161,1]
+    normalization:
+      Damaging:
+        - "Damaging"
+        - "damaging"
+        - "Destabilizing"
+        - "destabilizing"
+        - "pathogenic"
+        - "Pathogenic"
+      Neutral:
+        - "Neutral"
+        - "neutral"
+        - "Benign"
+        - "benign"
+      Uncertain:
+        - "Uncertain"
+        - "uncertain"
+    comparisons:
+      - name: "RaSP-FoldX_consensus_comparison"
+        columns: ["Stability classification, (RaSP, FoldX) [md]"]
+        priority:
+          class_order: ["Damaging", "Neutral"]
+          priority_for_classification:
+            Damaging: ["Stability classification, (RaSP, FoldX) [md]"]
+            Neutral:  ["Stability classification, (RaSP, FoldX) [md]"]

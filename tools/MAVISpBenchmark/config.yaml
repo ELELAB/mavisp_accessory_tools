@@ -1,0 +1,44 @@
+modes:
+  <mode_name>:               #  "simple" or "ensemble
+    experimental_column: "experimental data column"
+    experimental_column_classification: "experimental classification column"
+    experimental_thresholds: []  # not need in case of classification in experimental_column leave it empty
+    normalization:
+      Damaging: # all labels considered "Damaging"
+        - "Damaging"
+        - "damaging"
+        - "Destabilizing"
+        - "destabilizing"
+        - "pathogenic"
+        - "Pathogenic"
+      Neutral: # all labels considered "Neutral"
+        - "Neutral"
+        - "neutral"
+        - "Benign"
+        - "benign"
+        - "stabilizing"
+        - "Stabilizing"
+      Uncertain: # all labels considered "Uncertain"
+        - "Uncertain"
+        - "uncertain"
+    comparisons:
+      - name: "name_of_the_combined_column"
+        columns: ["column_name_1","column_name_2","column_name_3"..]
+        priority:
+          class_order: ["Damaging", "Neutral", "Uncertain"]
+          priority_for_classification:
+            Damaging: ["column_name_1","column_name_2"..]   # columns used to classify Damaging
+            Neutral: ["column_name_1","column_name_2"..]    # columns used to classify Neutral
+            Uncertain: ["column_name_1","column_name_2"..]  # columns used to classify Uncertain
+        weighted:                      # optional, if using weighted classification
+          weights:
+            <column_name>: <weight_value>
+            ...
+          threshold: <numeric_value>
+        voting:                        # optional, if using voting logic
+          target_class: <class_name>   # e.g., "Damaging"
+          logic: <string>              # e.g., "majority", "at_least_one" or "all"
+          fallback: <class_name>       # fallback class
+          handle_uncertain: <string>   # e.g., "return_uncertain",  "as_fallback"
+      - name: <comparison_name>
+        ...
