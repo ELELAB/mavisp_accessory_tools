@@ -126,7 +126,7 @@ scripts_parameters:
 
 This folder contains the scripts used automatically by the pipeline and should not be modified.
 For customization, refer to the config.yaml file provided to the Snakefile.
-The ArpeggioInteractionPipeline.py script and its configuration file are already described in the corresponding repository ( https://github.com/ELELAB/mavisp_accessory_tools/).
+The ArpeggioInteractionPipeline.py script and its configuration file are already described in the corresponding repository (https://github.com/ELELAB/mavisp_accessory_tools/). Please udpated the templates folder adding the script and configuration file from https://github.com/ELELAB/mavisp_accessory_tools/ before running.
 
 #### extract_foldx_energetic_contributions.py
 
