@@ -1,0 +1,6 @@
+Building DAG of jobs...
+MissingInputException in rule run_foldx_extraction in file /data/user/marnaudi/FoldX-Arpeggio_analysis/example/Snakefile, line 112:
+Missing input files for rule run_foldx_extraction:
+    output: output/foldx_output/delta_mean.csv
+    affected files:
+        templates/extract_foldx_energetic_contributions.py
