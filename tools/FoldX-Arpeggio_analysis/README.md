@@ -19,7 +19,7 @@ For each residue, the workflow:
 
 ## Affiliation
 
-Cancer Structural Biology, Danish Cancer Society Research Center, 2100, Copenhagen, Denmark
+Cancer Structural Biology, Danish Cancer Institute, 2100, Copenhagen, Denmark
 Cancer Systems Biology, Department of Health and Technology, Section for Bioinformatics, 2800, Lyngby, Denmark
 
 ## Description
