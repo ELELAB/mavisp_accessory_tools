@@ -222,13 +222,12 @@ This file collects all differences for each energetic contribution reported as c
 
 Here an exmaple of delta.csv:
 
-```
+
 |Position|Mutation|Model|IntraclashesGroup1|
 |--------|--------|-----|------------------|
 |GA702|S|1_0|0.054400000000001114|
 |GA702|S|1_1|0.02790000000000248|
 
-```
 
 N.B In the Model column, the index refers to the model number as the second digit. The first digit refers to the mutation’s position in the mutation list; in the example, it is the first mutation in the list.
 
@@ -252,12 +251,12 @@ This file collects, for each energetic contribution, the mean value across the f
 **Feature**, difference between the mutant and WT mean values for that energetic contribution
 
 
-```
-|Position|Mutation|Backbone_Hbond_wt_mean|Backbone_Hbond_wt_std|Backbone_Hbond_mut_mean|Backbone_Hbond_mut_std|Backbone_Hbond|...|
-|--------|--------|----------------------|---------------------|-----------------------|----------------------|--------------|...|
-|GA702|S|-11.8202|0.0|-11.87902|0.0014855975228842203|-0.05882000000000076|...|
+|Position|Mutation|Backbone_Hbond_wt_mean|Backbone_Hbond_wt_std|Backbone_Hbond_mut_mean|Backbone_Hbond_mut_std|Backbone_Hbond|…|
+|--------|--------|----------------------|---------------------|-----------------------|----------------------|--------------|--|
+|GA702|S|-11.8202|0.0|-11.87902|0.0014855975228842203|-0.05882000000000076|…|
 
-```
+
+
 #### positives.csv
 This file is a filtered version of delta.csv, containing only the positive contributions for each line. Negative values or zeroes are replaced with NaN automatically.
 
@@ -331,6 +330,7 @@ Reports only contacts or clashes that are unique to either the WT or the mutant.
 Collapses the unique_{contacts/clashes}.csv across models, summing contacts or clashes that are identical across multiple models. The model column lists all models sharing the same contact or clash, separated by underscores (e.g., model_0_model_1_model_2_model_3_model_4).
 Here an example of output for a run with the pipeline:
 
+```
 output/
 ├── arpeggio_output
 │   ├── G702S
@@ -408,7 +408,7 @@ output/
     ├── positive_mean.csv
     ├── positives.csv
     └── statistics.csv
-
+```
 ## How to Run
 
 ```
