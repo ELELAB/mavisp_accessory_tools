@@ -43,8 +43,12 @@ if __name__ == "__main__":
         # Plot
         plt.figure(figsize=(14,6))
         x = np.arange(len(features))  # 0, 1, 2, ..., N-1
-        colors = ["red"] + ["blue"] * (len(values)-1)
-        plt.bar(x, values, yerr=errors, color=colors, capsize=3)
+        # Pastel palette
+        first_color = "#FDBE85"  # pastel orange
+        other_color = "#A6CEE3"  # pastel blue
+
+        colors = [first_color] + [other_color] * (len(values) - 1)
+        plt.bar(x, values, yerr=errors, color=colors, edgecolor='black',capsize=3)
         plt.xticks(x, features, rotation=90)  # assign correct labels
         plt.ylabel("Value")
         plt.title(mutation_name)
