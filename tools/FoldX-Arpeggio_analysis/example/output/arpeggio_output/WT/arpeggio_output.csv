@@ -1,0 +1,3 @@
+catalytic_residue,catalytic_residue_pos,catalytic_residue_chain_id,catalytic_residue_atom,second_sphere_residue,second_sphere_pos,second_sphere_residue_atom,second_sphere_residue_chain_id,contact,distance,interacting_entities,type
+GLY,702,A,N,SER,699,O,A,"proximal, polar",3.39,INTER,atom-atom
+GLY,702,A,O,THR,704,N,A,"proximal, polar",3.47,INTER,atom-atom

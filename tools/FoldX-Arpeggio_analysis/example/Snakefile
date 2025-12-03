@@ -1,0 +1,555 @@
+############################################
+# COMPLETE SNAKEFILE (ADAPTED TO NEW CONFIG STRUCTURE)
+############################################
+
+import os
+import re
+import yaml
+import pandas as pd
+import subprocess
+import shutil
+from snakemake.io import directory
+
+# ----------------------------------------------------------
+# LOAD CONFIG
+# ----------------------------------------------------------
+with open("config.yaml") as f:
+    config = yaml.safe_load(f)
+
+foldx_dir = config["foldx_mutations_input_directory"]
+templates_dir = config["templates_path"]
+mutation_list_file = config["mutation_list"]
+
+output_dir = config["output"]["main_output_folder"]
+foldx_out = os.path.join(output_dir, config["output"]["foldx_output_folder"])
+arpeggio_out = os.path.join(output_dir, config["output"]["arpeggio_output_folder"])
+
+# NEW: access script parameters directly
+arpeggio_params = config["scripts_parameters"]["ArpeggioInteractionPipeline"]
+
+# ----------------------------------------------------------
+# LOAD MUTATION LETTERS
+# ----------------------------------------------------------
+mut_letters = pd.read_csv(mutation_list_file, header=None)[0].tolist()
+
+# ----------------------------------------------------------
+# PARSE WT + POSITION FROM SUBFOLDERS
+# ----------------------------------------------------------
+subfolders = [
+    s for s in os.listdir(foldx_dir)
+    if os.path.isdir(os.path.join(foldx_dir, s))
+    and re.match(r"^[A-Z][A-Z]?\d+$", s)
+]
+
+if len(subfolders) == 0:
+    raise ValueError("No valid subfolders (WT+pos) found under foldx_mutations_input_directory")
+
+WT_POS = []
+for sf in subfolders:
+    m = re.match(r"^([A-Z][A-Z]?)(\d+)$", sf)
+    if not m:
+        continue
+    WT = m.group(1)[0]
+    pdb_chain = m.group(1)[1:] or "A"
+    pos = int(m.group(2))
+    WT_POS.append((sf, WT, pdb_chain, pos))
+
+# ----------------------------------------------------------
+# BUILD FULL MUTATION NAMES
+# ----------------------------------------------------------
+mutations = []
+for (sf, WT, pdb_chain, pos) in WT_POS:
+    for m in mut_letters:
+        mutations.append(f"{WT}{pos}{m}")
+
+# ----------------------------------------------------------
+# Replica indices
+# ----------------------------------------------------------
+replicas = [0, 1, 2, 3, 4]
+
+# ----------------------------------------------------------
+# RULE ALL
+# ----------------------------------------------------------
+rule all:
+    input:
+        os.path.join(foldx_out, "plots"),
+        expand(
+            os.path.join(arpeggio_out, "{mut}", "aggregated_results", "contacts", "aggregated_contacts.csv"),
+            mut=mutations
+        ),
+        os.path.join(arpeggio_out, "WT", arpeggio_params["output_file"]),
+        expand(
+            os.path.join(arpeggio_out, "{mut}", "aggregated_results", "contacts", "unique_contacts.csv"),
+            mut=mutations
+        ),
+        expand(
+            os.path.join(arpeggio_out, "{mut}", "aggregated_results", "contacts", "collapsed_unique_contacts.csv"),
+            mut=mutations
+        ),
+        expand(os.path.join(arpeggio_out, "{mut}", "aggregated_results", "clashes", "aggregated_clashes.csv"),
+                mut=mutations
+        ),
+        expand(os.path.join(arpeggio_out, "{mut}", "aggregated_results", "clashes", "unique_clashes.csv"), 
+               mut=mutations
+        ),
+        expand(os.path.join(arpeggio_out, "{mut}", "aggregated_results", "clashes", "collapsed_unique_clashes.csv"),
+                mut=mutations
+        ),
+
+# ----------------------------------------------------------
+# CREATE OUTPUT DIRECTORIES
+# ----------------------------------------------------------
+rule create_output_dirs:
+    output:
+        foldx = directory(foldx_out),
+        arpeggio = directory(arpeggio_out)
+    shell:
+        "mkdir -p {output.foldx} {output.arpeggio}"
+
+# ----------------------------------------------------------
+# RUN FOLDX EXTRACTION
+# ----------------------------------------------------------
+rule run_foldx_extraction:
+    input:
+        script   = os.path.join(templates_dir, "extract_foldx_energetic_contributions.py"),
+        folder   = foldx_dir,
+        mut_list = mutation_list_file
+    output:
+        outfile = os.path.join(foldx_out, "delta_mean.csv")
+    params:
+        outdir = foldx_out
+    shell:
+        """
+        mkdir -p {params.outdir}
+        python {input.script} \
+            -i {input.folder} \
+            -m {input.mut_list} \
+            -o {params.outdir}
+        if [ ! -f {output.outfile} ]; then
+            echo "ERROR: expected file {output.outfile} not found" >&2
+            exit 1
+        fi
+        """
+
+rule plot_foldx_deltas:
+    input:
+        csv = os.path.join(foldx_out, "delta_mean.csv"),
+        script = os.path.join(templates_dir,"plot_foldx_deltas.py")
+    output:
+        directory(os.path.join(foldx_out, "plots"))
+    params:
+        outdir = os.path.join(foldx_out, "plots")
+    shell:
+        """
+        python {input.script} -i {input.csv} -o {params.outdir}
+        """
+
+# ----------------------------------------------------------
+# RUN ARPEGGIO ON EACH MODEL
+# ----------------------------------------------------------
+rule run_arpeggio_wt:
+    input:
+        template_script = os.path.join(templates_dir, "ArpeggioInteractionPipeline.py"),
+        template_cfg    = os.path.join(templates_dir, "config.yaml"),
+        pdb_conversion  = os.path.join(templates_dir, "convert_dna_nomenclature.py")
+    output: 
+        csv = os.path.join(arpeggio_out, "WT", arpeggio_params["output_file"]),
+        clashes = os.path.join(arpeggio_out, "WT", "clashes_contacts.csv")
+    params:
+        interface = arpeggio_params["interface"],
+        keep_proximal = arpeggio_params["keep_proximal"],
+        output_file = arpeggio_params["output_file"]
+    run:
+        wt_dir = os.path.join(arpeggio_out, "WT")
+        pdb_pattern = f"_Repair.pdb"
+        os.makedirs(wt_dir, exist_ok=True)
+        # Find PDB containing the pattern
+        pdb_file = None
+        residues_of_interest = []
+        for subfolder in subfolders:
+            residue = subfolder[0]
+            position = subfolder[2:]
+            res_chain = subfolder[1]
+            residues_of_interest.append((residue, position, res_chain))
+
+        for sub in subfolders:    
+            for f in os.listdir(os.path.join(foldx_dir, sub)):
+                if pdb_pattern in f:
+                    pdb_file = os.path.join(foldx_dir, sub, f)
+                    break
+            if pdb_file:
+                break
+
+        if pdb_file is None:
+            raise FileNotFoundError(f"PDB file containing pattern {pdb_pattern} not found")
+
+        # Copy necessary files
+        shutil.copy(pdb_file, wt_dir)
+        shutil.copy(input.template_script, wt_dir)
+        shutil.copy(input.template_cfg, wt_dir)
+
+        residues_file = os.path.join(wt_dir, "residues.csv")
+        with open(residues_file, "w") as f:
+            f.write("first_molecule,first_molecule_position,first_molecule_chain_id\n")
+            for residues in residues_of_interest:
+                f.write(f"{residues[0]},{residues[1]},{residues[2]}\n")
+
+        pdb_base = os.path.basename(pdb_file)
+        pdb_path = os.path.join(wt_dir, pdb_base)
+
+        flags = []
+        if params.interface:
+            flags.append("-i")
+        if params.keep_proximal:
+            flags.append("-k")
+
+        cmd = (
+                f"cd {wt_dir} && "
+                f"python ArpeggioInteractionPipeline.py "
+                f"-p {pdb_base} "
+                f"-y config.yaml "
+                f"-sm residues.csv "
+                f"-o {params.output_file} "
+                + " ".join(flags)
+            )
+
+        try:
+            shell(cmd)
+        except:
+            # Convert DNA nomenclature
+            converted_pdb = pdb_base.replace(".pdb", "_converted.pdb")
+            output_file = os.path.join(wt_dir, converted_pdb)
+            shell(f"python {input.pdb_conversion} -i {pdb_path} -o {output_file}")
+
+            # Rerun Arpeggio inside wt_dir
+            cmd_retry = (
+                f"cd {wt_dir} && "
+                f"python ArpeggioInteractionPipeline.py "
+                f"-p {converted_pdb} "
+                f"-y config.yaml "
+                f"-sm residues.csv "
+                f"-o {params.output_file} "
+                + " ".join(flags)
+            )
+            shell(cmd_retry)
+
+rule run_arpeggio_model:
+    input:
+        template_script = os.path.join(templates_dir, "ArpeggioInteractionPipeline.py"),
+        template_cfg    = os.path.join(templates_dir, "config.yaml"),
+        pdb_conversion  = os.path.join(templates_dir, "convert_dna_nomenclature.py")
+    output:
+        csv = os.path.join(arpeggio_out, "{mut}", "model_{rep}", arpeggio_params["output_file"]),
+        clashes = os.path.join(arpeggio_out, "{mut}", "model_{rep}", "clashes_contacts.csv")    
+    params:
+        interface = arpeggio_params["interface"],
+        keep_proximal = arpeggio_params["keep_proximal"],
+        output_file = arpeggio_params["output_file"]
+    run:
+        mut = wildcards.mut
+        rep = int(wildcards.rep)
+
+        # parse mutation name
+        m = re.match(r"^([A-Z]+)(\d+)([A-Z])$", mut)
+        if not m:
+            raise ValueError(f"Unexpected mutation format: '{mut}' (expected e.g. N327A)")
+
+        wt_letter = m.group(1)       # may be 1-2 letters depending on your naming
+        pos = int(m.group(2))
+        mut_aa = m.group(3)
+
+        # find the subfolder that matches this position (robust search)
+        subfolder_for_pos = None
+        for sf in subfolders:
+            mm = re.match(r"^([A-Z]+)(\d+)$", sf)
+            if not mm:
+                continue
+            sf_wt = mm.group(1)
+            sf_pos = int(mm.group(2))
+            # require same numeric position; optionally check WT letter if needed
+            if sf_pos == pos:
+                # optional: check WT letter match (if your folder uses chain letter scheme adapt accordingly)
+                # if sf_wt.startswith(wt_letter):
+                subfolder_for_pos = sf
+                sf_chain = sf_wt[1]
+                break
+
+        if subfolder_for_pos is None:
+            raise FileNotFoundError(f"No subfolder found for position {pos} (from mut {mut}) in {foldx_dir}")
+
+        # local index of this mut_aa for the given position (1-based)
+        try:
+            local_index = mut_letters.index(mut_aa) + 1
+        except ValueError:
+            raise ValueError(f"Mutant AA '{mut_aa}' not found in mutation list (expected one of {mut_letters})")
+
+        # pattern for expected PDB filename inside the position folder
+        pdb_pattern = f"_Repair_{local_index}_{rep}.pdb"
+        pos_folder = os.path.join(foldx_dir, subfolder_for_pos)
+
+        # try exact match first, then fallback to any file containing the pattern
+        pdb_file = None
+        for f in os.listdir(pos_folder):
+            if f.endswith(pdb_pattern):
+                pdb_file = os.path.join(pos_folder, f)
+                mut_dir = os.path.join(arpeggio_out, mut)
+                model_dir = os.path.join(mut_dir, f"model_{rep}")
+                os.makedirs(model_dir, exist_ok=True)
+                break
+        if pdb_file is None:
+            # fallback: any file that contains _Repair_{local_index} and _{rep}.pdb
+            for f in os.listdir(pos_folder):
+                if f"_Repair_{local_index}_" in f and f.endswith(".pdb") and f"_{rep}.pdb" in f:
+                    pdb_file = os.path.join(pos_folder, f)
+                    break
+
+        if pdb_file is None:
+            # as last resort, list files and show helpful debug info
+            raise FileNotFoundError(f"PDB not found for mut {mut} (expected pattern {pdb_pattern}) in {pos_folder}. "
+                                    f"Available files: {os.listdir(pos_folder)}")
+
+        
+
+        # Copy necessary files
+        shutil.copy(pdb_file, model_dir)
+        shutil.copy(input.template_script, model_dir)
+        shutil.copy(input.template_cfg, model_dir)
+
+        residues_file = os.path.join(model_dir, "residues.csv")
+        with open(residues_file, "w") as f:
+            f.write("first_molecule,first_molecule_position,first_molecule_chain_id\n")
+            f.write(f"{mut[-1]},{sf_pos},{sf_chain}\n")
+
+        pdb_base = os.path.basename(pdb_file)
+        pdb_path = os.path.join(model_dir, pdb_base)
+
+        flags = []
+        if params.interface:
+            flags.append("-i")
+        if params.keep_proximal:
+            flags.append("-k")
+
+        cmd = (
+                f"cd {model_dir} && "
+                f"python ArpeggioInteractionPipeline.py "
+                f"-p {pdb_base} "
+                f"-y config.yaml "
+                f"-sm residues.csv "
+                f"-o {params.output_file} "
+                + " ".join(flags)
+            )
+
+        try:
+            shell(cmd)
+        except:
+            # Convert DNA nomenclature
+            converted_pdb = pdb_base.replace(".pdb", "_converted.pdb")
+            output_file = os.path.join(model_dir, converted_pdb)
+            shell(f"python {input.pdb_conversion} -i {pdb_path} -o {output_file}")
+
+            # Rerun Arpeggio inside model_dir
+            cmd_retry = (
+                f"cd {model_dir} && "
+                f"python ArpeggioInteractionPipeline.py "
+                f"-p {converted_pdb} "
+                f"-y config.yaml "
+                f"-sm residues.csv "
+                f"-o {params.output_file} "
+                + " ".join(flags)
+            )
+            shell(cmd_retry)
+
+# ----------------------------------------------------------
+# AGGREGATE ARPEGGIO RESULTS
+# ----------------------------------------------------------
+rule aggregate_arpeggio:
+    input:
+        lambda wc: [
+            os.path.join(arpeggio_out, wc.mut, f"model_{rep}", arpeggio_params["output_file"])
+            for rep in replicas
+        ]
+    output:
+        aggregated = os.path.join(arpeggio_out, "{mut}", "aggregated_results", "contacts", "aggregated_contacts.csv")
+    run:
+        dfs = []
+        for f in input:
+            if os.path.exists(f):
+                df = pd.read_csv(f)
+                df["model"] = os.path.basename(os.path.dirname(f))
+                dfs.append(df)
+
+        if dfs:
+            pd.concat(dfs, ignore_index=True).to_csv(output.aggregated, index=False)
+
+rule delta_vs_wt:
+    input:
+        mut_agg = os.path.join(arpeggio_out, "{mut}", "aggregated_results", "contacts", "aggregated_contacts.csv"),
+        wt_csv  = os.path.join(arpeggio_out, "WT", arpeggio_params["output_file"])
+    output:
+        delta_combined_csv = os.path.join(arpeggio_out, "{mut}", "aggregated_results", "contacts", "unique_contacts.csv"),
+    run:
+        key_cols = [
+            "catalytic_residue_pos",
+            "catalytic_residue_chain_id",
+            "catalytic_residue_atom",
+            "second_sphere_residue",
+            "second_sphere_pos",
+            "second_sphere_residue_atom",
+            "second_sphere_residue_chain_id",
+            "contact"
+        ]
+
+        wt_df = pd.read_csv(input.wt_csv)
+        mut_df = pd.read_csv(input.mut_agg)
+
+        # --- Normalize key columns: strip spaces, convert to string ---
+        for col in key_cols:
+            wt_df[col] = wt_df[col].astype(str).str.strip()
+            mut_df[col] = mut_df[col].astype(str).str.strip()
+
+        wt_only = wt_df.merge(mut_df[key_cols], on=key_cols, how="left", indicator=True)
+        wt_only = wt_only[wt_only["_merge"] == "left_only"].drop(columns="_merge")
+        wt_only["origin"] = "WT"
+
+        mut_only = mut_df.merge(wt_df[key_cols], on=key_cols, how="left", indicator=True)
+        mut_only = mut_only[mut_only["_merge"] == "left_only"].drop(columns="_merge")
+        mut_only["origin"] = "MUT"
+
+        combined = pd.concat([wt_only, mut_only], axis=0)
+        combined.to_csv(output.delta_combined_csv, index=False)
+
+# ----------------------------------------------------------
+# AGGREGATE IDENTICAL ROWS AND CONCAT MODEL & DISTANCE
+# ----------------------------------------------------------
+rule collapse_models:
+    input:
+        csv_combined = os.path.join(arpeggio_out, "{mut}", "aggregated_results", "contacts", "unique_contacts.csv"),
+    output:
+        collapsed_csv = os.path.join(arpeggio_out, "{mut}", "aggregated_results", "contacts", "collapsed_unique_contacts.csv"),
+    run:
+
+        df = pd.read_csv(input.csv_combined)
+        key_cols = [
+            "catalytic_residue",
+            "catalytic_residue_pos",
+            "catalytic_residue_chain_id",
+            "catalytic_residue_atom",
+            "second_sphere_residue",
+            "second_sphere_pos",
+            "second_sphere_residue_atom",
+            "second_sphere_residue_chain_id",
+            "contact"
+        ]
+        df["model"] = df["model"].astype(str).str.strip()
+        grouped = df.groupby(key_cols).agg({
+            "distance": lambda x: "_".join(map(str, x)),
+            "model":  lambda x: "_".join(x),
+            "origin":"first",
+            "interacting_entities": "first",
+            "type": "first",
+        }).reset_index()
+
+        grouped.to_csv(output.collapsed_csv, index=False)
+        print(f"✅ Collapsed clashes saved: {output.collapsed_csv}, {len(grouped)} rows")
+
+# ----------------------------------------------------------
+# AGGREGATE CLASHES RESULTS PER MUTAZIONE
+# ----------------------------------------------------------
+rule aggregate_clashes:
+    input:
+        lambda wc: [
+            os.path.join(arpeggio_out, wc.mut, f"model_{rep}", "clashes_contacts.csv")
+            for rep in replicas
+        ]
+    output:
+        aggregated = os.path.join(arpeggio_out, "{mut}", "aggregated_results", "clashes", "aggregated_clashes.csv")
+    run:
+        import pandas as pd
+
+        dfs = []
+        for f in input:
+            if os.path.exists(f):
+                df = pd.read_csv(f)
+                df["model"] = os.path.basename(os.path.dirname(f))
+                dfs.append(df)
+
+        if dfs:
+            pd.concat(dfs, ignore_index=True).to_csv(output.aggregated, index=False)
+            print(f"✅ Aggregated clashes saved: {output.aggregated}, {len(pd.concat(dfs))} rows")
+
+# ----------------------------------------------------------
+# DELTA VS WT PER CLASHES
+# ----------------------------------------------------------
+rule delta_vs_wt_clashes:
+    input:
+        mut_agg = os.path.join(arpeggio_out, "{mut}", "aggregated_results", "clashes", "aggregated_clashes.csv"),
+        wt_csv  = os.path.join(arpeggio_out, "WT", "clashes_contacts.csv")
+    output:
+        delta_combined_csv = os.path.join(arpeggio_out, "{mut}", "aggregated_results", "clashes", "unique_clashes.csv"),
+    run:
+        key_cols = [
+            "catalytic_residue_pos",
+            "catalytic_residue_chain_id",
+            "catalytic_residue_atom",
+            "second_sphere_residue",
+            "second_sphere_pos",
+            "second_sphere_residue_atom",
+            "second_sphere_residue_chain_id",
+            "contact"
+        ]
+
+        wt_df = pd.read_csv(input.wt_csv)
+        mut_df = pd.read_csv(input.mut_agg)
+        
+        # --- Normalize key columns: strip spaces, convert to string ---
+        for col in key_cols:
+            wt_df[col] = wt_df[col].astype(str).str.strip()
+            mut_df[col] = mut_df[col].astype(str).str.strip()
+
+        wt_only = wt_df.merge(mut_df[key_cols], on=key_cols, how="left", indicator=True)
+        wt_only = wt_only[wt_only["_merge"] == "left_only"].drop(columns="_merge")
+        wt_only["origin"] = "WT"
+
+        mut_only = mut_df.merge(wt_df[key_cols], on=key_cols, how="left", indicator=True)
+        mut_only = mut_only[mut_only["_merge"] == "left_only"].drop(columns="_merge")
+        mut_only["origin"] = "MUT"
+
+        combined = pd.concat([wt_only, mut_only], axis=0)
+        combined.to_csv(output.delta_combined_csv, index=False)
+
+# ----------------------------------------------------------
+# COLLAPSE MODELS FOR CLASHES
+# ----------------------------------------------------------
+rule collapse_clashes:
+    input:
+        csv_combined = os.path.join(arpeggio_out, "{mut}", "aggregated_results", "clashes", "unique_clashes.csv"),
+    output:
+        collapsed_csv = os.path.join(arpeggio_out, "{mut}", "aggregated_results", "clashes", "collapsed_unique_clashes.csv"),
+    run:
+      
+        df = pd.read_csv(input.csv_combined)
+        key_cols = [
+            "catalytic_residue",
+            "catalytic_residue_pos",
+            "catalytic_residue_chain_id",
+            "catalytic_residue_atom",
+            "second_sphere_residue",
+            "second_sphere_pos",
+            "second_sphere_residue_atom",
+            "second_sphere_residue_chain_id",
+            "contact"
+        ]
+        df["model"] = df["model"].astype(str).str.strip()
+        grouped = df.groupby(key_cols).agg({
+            "distance": lambda x: "_".join(map(str, x)),
+            "model":  lambda x: "_".join(x),
+            "origin":"first",
+            "interacting_entities": "first",
+            "type": "first",
+        }).reset_index()
+
+        grouped.to_csv(output.collapsed_csv, index=False)
+        print(f"✅ Collapsed clashes saved: {output.collapsed_csv}, {len(grouped)} rows")
+
+
+
