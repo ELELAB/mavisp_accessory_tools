@@ -80,3 +80,15 @@ python ../../annotate_heteroatoms.py -d ../../cofactors_dict.json -c ../find_cof
 1) A csv with all your heteroatoms annotated with the json dictionary, "all_heteroatoms_annotated.csv ". If the heteroatom is not in the list it is annotated as "not a cofactor". The remaining columns contain annotations downloaded from PDB.
 2) A list of only the heteroatoms that were cofactors (according to the json dictionary), "cofactor_only.txt".  
 
+## **New Feature: PDB Ligand Analysis**
+
+New arguments: -p/--pdb, -s/--start, -e/--end for PDB file analysis
+Finds ligand contacts within 4Å and categorizes as inside/cross/outside trimmed regions
+Classifies ligands using cofactors_dict.json
+Outputs detailed CSV with contacts, distances, and classifications
+
+## **Improvements after first round of revision**
+
+Refactored nested loops into simpler approach
+Used pandas for all CSV output
+Better variable handling and error checking

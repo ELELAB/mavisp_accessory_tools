@@ -1,0 +1,3 @@
+ligand_id,resname,chain,residue_number,contact_residues,contact_count,shortest_distance,location_category,biological_label
+MG_A_401,MG,A,401,ASN38;LYS84;GLY98,3,2.190000057220459,inside trim,ion
+ADP_A_402,ADP,A,402,ASN38;ALA103;THR82;LYS84;GLY98;GLY101;THR81;LEU104;VAL76;SER83;ALA42;ASP63;THR148;ILE68;GLU102;PHE99;ARG100;CYS39;ILE150,19,1.9900000095367432,inside trim,other ligand
