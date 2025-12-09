@@ -1,0 +1,13 @@
+templates_path: templates
+foldx_mutations_input_directory: "/data/raw_data/computational_data/mutatex_data/marinara/pole/complexes/DNA/9F6K_27-1175_pdbs/mutations/9F6K_Q07864_27-1175_model0_checked_Repair/"
+mutation_list: "/data/raw_data/computational_data/mutatex_data/marinara/pole/complexes/DNA/9F6K_27-1175_pdbs/mutation_list.txt"
+output:
+   main_output_folder: "output"
+   foldx_output_folder: "foldx_output"
+   arpeggio_output_folder: "arpeggio_output"
+scripts_parameters:
+  ArpeggioInteractionPipeline:
+    interface: False
+    output_file: "arpeggio_output.csv"
+    keep_proximal: False
+
