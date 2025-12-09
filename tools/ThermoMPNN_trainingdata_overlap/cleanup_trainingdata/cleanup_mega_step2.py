@@ -18,18 +18,18 @@ def run_blast(seq, identity_threshold=IDENTITY_THRESHOLD):
             for hsp in alignment.hsps:
                 identity_percent = (hsp.identities / hsp.align_length) * 100
 
-                # Print details live
+                # Print results
                 print(f"  → Hit: {alignment.hit_id}")
                 print(f"    Description: {alignment.hit_def}")
                 print(f"    Identity: {identity_percent:.2f}%")
 
                 if identity_percent >= identity_threshold:
-                    # Extract UniProt accession safely
+                    # Extract UniProt accession
                     hit_id = alignment.hit_id
                     if "|" in hit_id:
                         parts = hit_id.split("|")
                         if len(parts) >= 2:
-                            uniprot = parts[1]   # sp|P12345|NAME
+                            uniprot = parts[1]   # e.g. sp|P12345|NAME
                         else:
                             uniprot = hit_id
                     else:
@@ -80,7 +80,7 @@ for idx, row in df_missing.iterrows():
             "protein_name": row['protein_name']
         })
 
-    time.sleep(3)  # be nice to NCBI
+    time.sleep(3)
 
 # Combine
 df_final = pd.concat([df_known, pd.DataFrame(blast_rows)], ignore_index=True)

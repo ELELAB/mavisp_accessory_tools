@@ -5,7 +5,7 @@ import pandas as pd
 from datetime import datetime
 
 # CONFIG
-all_root = "/data/raw_data/computational_data/mavisp_database_saturation/"  # directory that contains all the date-stamped MAVISp dataset folders
+all_root = "/data/raw_data/computational_data/mavisp_database_saturation/"  # directory with all MAVISp dataset folders
 combined_csv_path = "./combined_mega_fireprot.csv"
 
 # 1. Find newest ALL folder
@@ -22,10 +22,10 @@ for dirname in os.listdir(all_root):
             candidates.append((date, full_path))
 
 if not candidates:
-    raise ValueError("No valid ALL directories found in " + all_root)
+    raise ValueError("No valid directories found in " + all_root)
 
 newest_dir = max(candidates)[1]
-print("Newest ALL directory found:", newest_dir)
+print("Newest directory found:", newest_dir)
 
 # 2. Find index.csv in newest dir
 simple_dir = os.path.join(newest_dir, "simple_mode")

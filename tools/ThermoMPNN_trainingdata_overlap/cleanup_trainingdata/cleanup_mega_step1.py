@@ -87,7 +87,7 @@ for idx, row in df_unique.iterrows():
                     "aa_seq": row["aa_seq"],
                     "protein_name": row["name"]
                 })
-        # Optional: sleep a little to avoid overloading API
+        # Sleep to avoid overloading API
         time.sleep(0.1)
     else:
         cleaned_rows.append({
