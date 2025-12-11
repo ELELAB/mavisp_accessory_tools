@@ -72,21 +72,29 @@ def load_filter_file(filepath):
     with open(filepath) as f:
         return set(line.strip().upper() for line in f if line.strip())
 
-def calculate_ligand_contacts(ligand, protein_residues):
+def calculate_ligand_contacts(ligand, protein_residues, distance_cutoff):
     """ Calculate minimum distance and contacts for a ligand """
-    min_distance = 100.0
+    min_distance = np.inf
     contacts = []
 
     for ligand_atom in ligand:
+        if ligand_atom.element == 'H':
+            continue
         for protein_res in protein_residues:
+            contact_found = False
             for protein_atom in protein_res:
+                if protein_atom.element == 'H':
+                    continue
                 distance = np.linalg.norm(ligand_atom.coord - protein_atom.coord)
-                if distance < 4.0:
+                if distance < distance_cutoff:
                     contact_str = f"{protein_res.resname}{protein_res.id[1]}"
                     if contact_str not in contacts:
                         contacts.append(contact_str)
+                        contact_found = True
                 if distance < min_distance:
                     min_distance = distance
+                if contact_found:
+                    break
     return min_distance, contacts
 
 def main():
@@ -100,6 +108,10 @@ def main():
     parser.add_argument("-s", "--start", type=int, help="Start residue of trimmed region")
     parser.add_argument("-e", "--end", type=int, help="End residue of trimmed region")
     parser.add_argument("-c", "--cofactors", help="JSON file with cofactor definitions")
+    parser.add_argument("-n", "--chain", help="Chain ID to analyze in PDB file")
+    parser.add_argument("-d", "--distance", type=float, default=4.0, help="Distance cutoff for contacts in Angstroms (default: 4.0)")
+    parser.add_argument("-l", "--ions", help="File with list of ion names (one per line)")
+
 
     args = parser.parse_args()
 
@@ -112,6 +124,10 @@ def main():
         except FileNotFoundError:
             print(f"Warning: {args.cofactors} not found, using basic classification")
             cofactor_list = set()
+    if args.ions:
+        ion_list = load_filter_file(args.ions)
+    else:
+        ion_list = set(['NA', 'K', 'CL', 'CA', 'MG', 'ZN', 'FE'])
 
     if not args.u and not args.i:
         print("Error: Provide either -u or -i")
@@ -130,19 +146,25 @@ def main():
         if args.start is None or args.end is None:
             print("Error: -s and -e required when using -p")
             sys.exit(1)
+        if args.chain is None:
+            print("Error: -n (chain ID) required when using -p")
+            sys.exit(1)
 
         print(f"Analyzing PDB file: {args.pdb}")
+        print(f"Chain: {args.chain}")
         print(f"Residue range: {args.start}-{args.end}")
+        print(f"Distance cutoff: {args.distance} Å")
 
-
-        parser = PDBParser(QUIET=True)
-        structure = parser.get_structure('protein', args.pdb)
+        pdb_parser = PDBParser(QUIET=True)
+        structure =pdb_parser.get_structure('protein', args.pdb)
         model = structure[0]
 
 
         protein_residues = []
         ligands = []
         for chain in model:
+            if chain.id != args.chain:
+                continue
             for residue in chain:
                 if residue.id[0] == ' ':
                     res_num = residue.id[1]
@@ -154,7 +176,7 @@ def main():
 
 
         for ligand in ligands:
-            min_distance, contacts = calculate_ligand_contacts(ligand, protein_residues)
+            min_distance, contacts = calculate_ligand_contacts(ligand, protein_residues, args.distance)
 
             if len(contacts) == 0:
                 category = "no contacts"
@@ -165,7 +187,7 @@ def main():
 
             if ligand_name in cofactor_list:
                 ligand_type = "cofactor"
-            elif ligand_name in ['NA', 'K', 'CL', 'CA', 'MG', 'ZN', 'FE']:
+            elif ligand_name in ion_list:
                 ligand_type = "ion"
             else:
                 ligand_type = "other ligand"
