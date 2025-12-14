@@ -36,24 +36,25 @@ def get_uniprot_rcsb(pdb_id):
     try:
         response = requests.post(GRAPHQL_URL, json={"query": GRAPHQL_QUERY, "variables": variables})
         response.raise_for_status()
-        data = response.json().get("data", {}).get("entry", {})
-        if not data:
-            print(f"[RCSB ERROR] {pdb_id}: No data returned")
-            pdb_cache[pdb_id] = []
-            return []
-
-        uniprots = []
-        for entity in data.get("polymer_entities", []):
-            refs = entity.get("rcsb_polymer_entity_container_identifiers", {}).get("reference_sequence_identifiers", [])
-            for ref in refs:
-                if ref.get("database_name") == "UniProt":
-                    uniprots.append(ref.get("database_accession"))
-        pdb_cache[pdb_id] = uniprots
-        return uniprots
     except Exception as e:
         print(f"[RCSB ERROR] {pdb_id}: {e}")
         pdb_cache[pdb_id] = []
         return []
+
+    data = response.json().get("data", {}).get("entry", {})
+    if not data:
+        print(f"[RCSB ERROR] {pdb_id}: No data returned")
+        pdb_cache[pdb_id] = []
+        return []
+
+    uniprots = []
+    for entity in data.get("polymer_entities", []):
+        refs = entity.get("rcsb_polymer_entity_container_identifiers", {}).get("reference_sequence_identifiers", [])
+        for ref in refs:
+            if ref.get("database_name") == "UniProt":
+                uniprots.append(ref.get("database_accession"))
+    pdb_cache[pdb_id] = uniprots
+    return uniprots
 
 # Load dataset
 df = pd.read_csv(INPUT_FILE)
@@ -75,7 +76,7 @@ for idx, row in df_unique.iterrows():
                 "WT_name": wt_name,
                 "pdb_id": pdb_id,
                 "uniprot_id": None,
-                "aa_seq": row["aa_seq"],
+                "wt_seq": row["wt_seq"],
                 "protein_name": row["name"]
             })
         else:
@@ -84,7 +85,7 @@ for idx, row in df_unique.iterrows():
                     "WT_name": wt_name,
                     "pdb_id": pdb_id,
                     "uniprot_id": uid,
-                    "aa_seq": row["aa_seq"],
+                    "wt_seq": row["wt_seq"],
                     "protein_name": row["name"]
                 })
         # Sleep to avoid overloading API
@@ -94,7 +95,7 @@ for idx, row in df_unique.iterrows():
             "WT_name": wt_name,
             "pdb_id": None,
             "uniprot_id": None,
-            "aa_seq": row["aa_seq"],
+            "wt_seq": row["wt_seq"],
             "protein_name": row["name"]
         })
 

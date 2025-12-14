@@ -7,5 +7,8 @@
 
 # To run: 
 ./compare_ThermoMPNN_trainingdata.py
+# example: 
+./compare_ThermoMPNN_trainingdata.py /data/raw_data/computational_data/mavisp_database_saturation/09122025_ALL/simple_mode/index.csv combined_mega_fireprot.csv 
+
 
 # Check if overlap.csv and benchmarking_dataset.csv were created
