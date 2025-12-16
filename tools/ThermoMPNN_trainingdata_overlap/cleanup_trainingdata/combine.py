@@ -25,6 +25,9 @@ def prepare_mega(path):
     # Use only defined columns
     mega = mega[TRAINING_COLUMNS]
 
+    # Get only unique Uniprot ACs
+    mega = mega.drop_duplicates(subset="uniprot_id", keep="first")
+
     return mega
 
 def prepare_fireprot(path):
@@ -42,6 +45,9 @@ def prepare_fireprot(path):
 
     # Use only defined columns
     fireprot = fireprot[TRAINING_COLUMNS]
+
+    # Get only unique Uniprot ACs
+    fireprot = fireprot.drop_duplicates(subset="uniprot_id", keep="first")
 
     return fireprot
 
