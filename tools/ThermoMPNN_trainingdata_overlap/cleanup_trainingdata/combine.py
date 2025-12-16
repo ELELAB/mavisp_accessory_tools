@@ -48,7 +48,7 @@ def prepare_fireprot(path):
 
 def main():
     # Input files
-    MEGA_INPUT = "mega_cleaned_full_with_blast_B.csv"
+    MEGA_INPUT = "mega_cleaned_full_with_blast.csv"
     FIREPROT_INPUT = "fireprot_clean.csv"
 
     # Output files

@@ -6,7 +6,7 @@
 # which can be used for benchmarking.
 
 # To run: 
-./compare_ThermoMPNN_trainingdata.py
+./compare_ThermoMPNN_trainingdata.py <index_csv_path> <training_csv_path>
 # example: 
 ./compare_ThermoMPNN_trainingdata.py /data/raw_data/computational_data/mavisp_database_saturation/09122025_ALL/simple_mode/index.csv combined_mega_fireprot.csv 
 
