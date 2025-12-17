@@ -49,7 +49,8 @@ def get_uniprot_rcsb(pdb_id):
 
     uniprots = []
     for entity in data.get("polymer_entities", []):
-        refs = entity.get("rcsb_polymer_entity_container_identifiers", {}).get("reference_sequence_identifiers", [])
+        container = entity.get("rcsb_polymer_entity_container_identifiers") or {}
+        refs = container.get("reference_sequence_identifiers") or []
         for ref in refs:
             if ref.get("database_name") == "UniProt":
                 uniprots.append(ref.get("database_accession"))
