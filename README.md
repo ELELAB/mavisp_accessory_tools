@@ -22,6 +22,8 @@ This repository provides accessory tools associated with papers and activities o
 	2. mavisp\_afmultimer: a toolkit that generates protein complex structures with AlphaFold-Multimer from provided FASTA sequences, computes pdockq2 scores, and outputs a summary table of confidence metrics in the same format as mavisp\_af3.
 - **uniprot2refseq**: a script to retrieve the correct refseq ID given a uniprot ID - to use before the mavisp_automatization step to ensure the proper match between identifiers
 - **FoldX-Arpeggio_analysis**: The Snakefile implements a fully automated pipeline that takes as input the FoldX results organized into folders named according to the wild-type (WT) residue, chain, and position (e.g., AA25, FA102). For each residue, the workflow extracts the energetic contributions computed by FoldX and visualizes them through bar plots for improved interpretability. It then generates all mutations listed in the FoldX mutation file, selects the corresponding structural models, and runs Arpeggio on both WT and mutant structures. Based on these results, the pipeline produces comparative WT–mutant interaction files that highlight which interactions are unique, lost, or altered in the mutant. Finally, it generates “collapsed” summary files that aggregate the energetic and structural contributions across all models or replicates for each mutation, providing a concise overview of the mutation’s predicted impact.
+- **ss_bonds**: This module assesses how cysteine-altering variants may disrupt native disulfide bonds or enable new ones by analyzing structural geometry, rotamer accessibility, and ensembles of FoldX-generated models. Developed for a study currently in progress:  
+  *“Decoding ATG9A Variation: A Comprehensive Structural Investigation of All Missense Variants”*  
   
 ## Citations  
 
@@ -32,3 +34,4 @@ If you use this repository, please cite the following works:
 - Arnaudi, Matteo et al. *"From Structure to Function: Interpreting the Effects of DNA Polymerase Variants in Cancer"*.Manuscript under review  
 - Kishore, Jaganathan et al. *"Predicting Splicing from Primary Sequence with Deep Learning"*
 - Zeng, Tony et al. *"Predicting RNA splicing from DNA sequence using Pangolin"*
+- Utichi, Mattia et al. *“Decoding ATG9A Variation: A Comprehensive Structural Investigation of All Missense Variants”*  
