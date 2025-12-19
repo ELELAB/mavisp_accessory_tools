@@ -1,2 +1,6 @@
-Number_of_Residues_wt_mean,Number_of_Residues_mut_mean,Number_of_Residues,Interface_Residues_wt_mean,Interface_Residues_mut_mean,Interface_Residues,Interface_Residues_Clashing_wt_mean,Interface_Residues_Clashing_mut_mean,Interface_Residues_Clashing,Interface_Residues_VdW_Clashing_wt_mean,Interface_Residues_VdW_Clashing_mut_mean,Interface_Residues_VdW_Clashing,Interface_Residues_BB_Clashing_wt_mean,Interface_Residues_BB_Clashing_mut_mean,Interface_Residues_BB_Clashing
-1080.0,1080.0,0.0,71.0,72.0,1.0,0.0,2.0,2.0,0.0,2.0,2.0,0.0,0.0,0.0
+Position,Mutation,Number_of_Residues,Interface_Residues,Interface_Residues_Clashing,Interface_Residues_VdW_Clashing,Interface_Residues_BB_Clashing
+TA1090,R,0,1,0,0,0
+TA1090,R,0,0,0,0,0
+TA1090,R,0,3,0,0,0
+TA1090,R,0,0,0,0,0
+TA1090,R,0,3,0,0,0

@@ -1,0 +1,40 @@
+catalytic_residue,catalytic_residue_pos,catalytic_residue_chain_id,catalytic_residue_atom,second_sphere_residue,second_sphere_pos,second_sphere_residue_atom,second_sphere_residue_chain_id,contact,distance,interacting_entities,type,model
+ARG,1090,A,CZ,DA,32,O1P,T,"proximal, ionic",3.83,INTER,atom-atom,model_0
+ARG,1090,A,NH2,DA,31,O3*,T,"vdw, polar",3.13,INTER,atom-atom,model_0
+ARG,1090,A,N,PRO,1088,O,A,"proximal, polar",3.35,INTER,atom-atom,model_0
+ARG,1090,A,CB,LYS,1050,CG,A,"proximal, hydrophobic",4.13,INTER,atom-atom,model_0
+ARG,1090,A,CG,DT,33,O1P,T,"proximal, weak_polar",3.36,INTER,atom-atom,model_0
+ARG,1090,A,O,SER,1055,OG,A,"vdw, polar",3.05,INTER,atom-atom,model_0
+ARG,1090,A,NH2,DA,32,O5*,T,"proximal, polar",3.26,INTER,atom-atom,model_0
+ARG,1090,A,CZ,DA,32,O1P,T,"proximal, ionic",3.87,INTER,atom-atom,model_1
+ARG,1090,A,NH2,DA,31,O3*,T,"vdw, polar",3.12,INTER,atom-atom,model_1
+ARG,1090,A,N,PRO,1088,O,A,"proximal, polar",3.35,INTER,atom-atom,model_1
+ARG,1090,A,CD,THR,1052,N,A,vdw,3.27,INTER,atom-atom,model_1
+ARG,1090,A,CG,DT,33,O1P,T,"proximal, weak_polar",3.45,INTER,atom-atom,model_1
+ARG,1090,A,CB,LYS,1050,CG,A,"proximal, hydrophobic",4.12,INTER,atom-atom,model_1
+ARG,1090,A,O,SER,1055,OG,A,"vdw, polar",3.05,INTER,atom-atom,model_1
+ARG,1090,A,NH2,DA,32,O5*,T,"proximal, polar",3.26,INTER,atom-atom,model_1
+ARG,1090,A,NE,DA,32,C4*,T,vdw,3.34,INTER,atom-atom,model_1
+ARG,1090,A,O,SER,1055,OG,A,"vdw, polar",3.05,INTER,atom-atom,model_2
+ARG,1090,A,N,PRO,1088,O,A,"proximal, polar",3.35,INTER,atom-atom,model_2
+ARG,1090,A,CD,DT,33,O1P,T,"proximal, weak_polar",3.46,INTER,atom-atom,model_2
+ARG,1090,A,CD,SER,1051,CA,A,vdw,3.46,INTER,atom-atom,model_2
+ARG,1090,A,CD,LYS,1050,O,A,"vdw, weak_polar",3.3,INTER,atom-atom,model_2
+ARG,1090,A,NE,DA,32,O4*,T,"proximal, polar",3.34,INTER,atom-atom,model_2
+ARG,1090,A,NE,DA,32,O3*,T,"proximal, polar",3.33,INTER,atom-atom,model_2
+ARG,1090,A,NH1,DT,33,C5*,T,vdw,3.34,INTER,atom-atom,model_2
+ARG,1090,A,NE,LYS,1050,O,A,"proximal, polar",3.21,INTER,atom-atom,model_2
+ARG,1090,A,N,PRO,1088,O,A,"proximal, polar",3.35,INTER,atom-atom,model_3
+ARG,1090,A,CZ,DA,32,O1P,T,"proximal, ionic",3.86,INTER,atom-atom,model_3
+ARG,1090,A,NH1,THR,1052,CB,A,vdw,3.28,INTER,atom-atom,model_3
+ARG,1090,A,NE,DA,32,C4*,T,vdw,3.28,INTER,atom-atom,model_3
+ARG,1090,A,CG,DT,33,O1P,T,"proximal, weak_polar",3.36,INTER,atom-atom,model_3
+ARG,1090,A,CB,LYS,1050,CD,A,"proximal, hydrophobic",4.24,INTER,atom-atom,model_3
+ARG,1090,A,O,SER,1055,OG,A,"vdw, polar",3.05,INTER,atom-atom,model_3
+ARG,1090,A,N,PRO,1088,O,A,"proximal, polar",3.35,INTER,atom-atom,model_4
+ARG,1090,A,CB,LYS,1050,CG,A,"proximal, hydrophobic",3.88,INTER,atom-atom,model_4
+ARG,1090,A,CB,LYS,1050,CD,A,"proximal, hydrophobic",4.32,INTER,atom-atom,model_4
+ARG,1090,A,CD,THR,1052,N,A,vdw,3.32,INTER,atom-atom,model_4
+ARG,1090,A,CG,DT,33,O1P,T,"proximal, weak_polar",3.4,INTER,atom-atom,model_4
+ARG,1090,A,CG,LYS,1050,CG,A,"proximal, hydrophobic",4.27,INTER,atom-atom,model_4
+ARG,1090,A,O,SER,1055,OG,A,"vdw, polar",3.05,INTER,atom-atom,model_4

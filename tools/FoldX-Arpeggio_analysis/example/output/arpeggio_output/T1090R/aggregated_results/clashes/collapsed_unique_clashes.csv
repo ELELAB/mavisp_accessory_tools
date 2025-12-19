@@ -1,0 +1,17 @@
+catalytic_residue,catalytic_residue_pos,catalytic_residue_chain_id,catalytic_residue_atom,second_sphere_residue,second_sphere_pos,second_sphere_residue_atom,second_sphere_residue_chain_id,contact,distance,model,origin,interacting_entities,type
+ARG,1090,A,CD,DA,32,O3*,T,"vdw_clash, weak_polar",2.98,model_2,MUT,INTER,atom-atom
+ARG,1090,A,CG,DA,32,O3*,T,"vdw_clash, weak_polar",2.96_3.04_3.13_2.96_3.0,model_0_model_1_model_2_model_3_model_4,MUT,INTER,atom-atom
+ARG,1090,A,CZ,DA,32,C4*,T,vdw_clash,3.23,model_4,MUT,INTER,atom-atom
+ARG,1090,A,CZ,DA,32,C5*,T,vdw_clash,3.31_3.27_3.32,model_0_model_1_model_4,MUT,INTER,atom-atom
+ARG,1090,A,CZ,DA,32,O4*,T,vdw_clash,3.06,model_2,MUT,INTER,atom-atom
+ARG,1090,A,CZ,LYS,1050,O,A,vdw_clash,3.0,model_2,MUT,INTER,atom-atom
+ARG,1090,A,NE,DA,32,C4*,T,vdw_clash,3.19_3.22_3.09,model_0_model_2_model_4,MUT,INTER,atom-atom
+ARG,1090,A,NH1,LYS,1050,O,A,"vdw_clash, polar",2.77,model_2,MUT,INTER,atom-atom
+ARG,1090,A,NH1,THR,1052,CG2,A,vdw_clash,3.18,model_3,MUT,INTER,atom-atom
+ARG,1090,A,NH2,DA,32,C5*,T,vdw_clash,3.07_3.03,model_0_model_1,MUT,INTER,atom-atom
+ARG,1090,A,NH2,DA,32,O1P,T,"vdw_clash, ionic, polar",2.7_2.75_2.74,model_0_model_1_model_3,MUT,INTER,atom-atom
+ARG,1090,A,NH2,DA,32,O4*,T,"vdw_clash, polar",3.02,model_2,MUT,INTER,atom-atom
+ARG,1090,A,NH2,DA,32,P,T,vdw_clash,3.24_3.25,model_0_model_1,MUT,INTER,atom-atom
+THR,1090,A,CG2,DA,32,O3*,T,"vdw_clash, weak_polar",3.14,nan,WT,INTER,atom-atom
+THR,1090,A,OG1,DT,33,O1P,T,"vdw_clash, polar",2.5,nan,WT,INTER,atom-atom
+THR,1090,A,OG1,LYS,1050,CD,A,"vdw_clash, weak_polar",3.13,nan,WT,INTER,atom-atom
