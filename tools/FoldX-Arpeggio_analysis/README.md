@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The Snakefile implements a fully automated pipeline that takes as input the FoldX results organized into folders named by the wild-type (WT) residue chain and position (e.g., AA25, FA102, …).
+The Snakefile implements a fully automated pipeline that takes as input the FoldX results obtained through the Mutatex wrapper, organized into folders named by the wild-type (WT) residue chain and position (e.g., AA25, FA102, …).
 For each residue, the workflow:
 
 - extracts energetic contributions from FoldX, plotting them with bars plot for a better visualization
@@ -24,8 +24,8 @@ Cancer Systems Biology, Department of Health and Technology, Section for Bioinfo
 
 ## Description
 
-The Snakemake pipeline automates the analysis of mutation effects by combining energetic contributions from FoldX with geometrical distance analysis through Arpeggio. The Snakefile takes as input a configuration file specifying the FoldX output path, the mutation list, and the desired name for the output directories.
-The workflow automatically parses the WT residue, position, and chain from the FoldX folder structure. It loads the list of mutant amino acid letters, generates all possible mutations in the format W25F, W25Y, etc., and sets up the output directories and parameters defined in the YAML configuration file.
+The Snakemake pipeline automates the analysis of mutation effects by combining energetic contributions from FoldX with geometrical distance analysis through Arpeggio. The Snakefile takes as input a configuration file specifying the MutateX output path, the mutation list, and the desired name for the output directories.
+The workflow automatically parses the WT residue, position, and chain from the MutateX folder structure. It loads the list of mutant amino acid letters, generates all possible mutations in the format W25F, W25Y, etc., and sets up the output directories and parameters defined in the YAML configuration file.
 The pipeline executes the script extract_foldx_energetic_contributions.py to parse the FoldX output, extracting for each mutation the energetic contributions of both the mutant and the WT across the five models generated during the FoldX run. It then computes, for each model, the difference between mutant and WT for each energetic term and aggregates these values into output file called delta.csv for inspection. Additionally, it identifies all energetic contributions where the mutant–WT subtraction results in a positive value (indicating a destabilizing effect) and produces a positives.csv file summarizing these contributions for all mutations. The pipeline also generates two additional output files. The file delta_mean.csv reports, for each energetic contribution, the mean and standard deviation of the energy differences computed between mutant and wild-type models. Specifically, for each of the five FoldX models, the energetic contribution of the corresponding wild-type model is subtracted from that of the mutant model, yielding five paired differences. The reported mean value corresponds to the average of these five differences, while the associated standard deviation reflects the variability across the five paired mutant–wild-type comparisons.
 Next, the pipeline processes the FoldX repair models for each mutant and the validated WT _repair.pdb structure, generating the necessary input files for running Arpeggio (see the mavisp-accessory_tools repository, https://github.com/ELELAB/mavisp_accessory_tools/). Arpeggio is executed on the WT model and on each of the five models for every mutant. After the analysis, the pipeline aggregates all contacts computed across the five models into a single file, distinguishing between contacts and clashes. It then extracts those interactions present in the mutants but absent in the WT, and those present in the WT but lost in the mutants, saving each category into separate files.
 
@@ -44,9 +44,9 @@ Required Software
 - re
 - os
 
-FoldX (already executed; pipeline starts from FoldX outputs)
+MutateX results (already executed; pipeline starts from the FoldX outputs)
 
-Arpeggio installed in the active environment
+Arpeggio installed in the active environment inside a Docker container
 
 ## Input
 
@@ -54,11 +54,11 @@ The Snakefile takes as input a configuration file with the following structure:
 
 **templates_path**: path to the folder containing the templates and scripts required by the pipeline
 
-**foldx_mutations_input_directory**: path to the FoldX output directory, which must contain one subfolder per mutated position, including the WT and mutant FoldX models and the associated energetic contributions
+**foldx_mutations_input_directory**: path to the MutateX output directory, which must contain one subfolder per mutated position, including the WT and mutant FoldX models and the associated energetic contributions
 
 **mutation_list**: list of mutations used for the FoldX run
 
-**main_output_folder**: main directory where the pipeline will store outputs from both FoldX and Arpeggio analyses
+**main_output_folder**: main directory where the pipeline will store outputs from both MutateX and Arpeggio analyses
 
 **foldx_output_folder**: name of the subfolder to store the processed FoldX energetic readouts
 
@@ -68,7 +68,7 @@ The Snakefile takes as input a configuration file with the following structure:
 
 ### foldx_mutations_input_directory
 
-The directory produced by FoldX and required by the pipeline must follow this structure:
+The directory produced by MutateX and required by the pipeline must follow this structure:
 (Example rooted at /data/raw_data/computational_data/mutatex_data/marinara/pole/complexes/DNA/9B8T_24-1198_retromut_pdbs/mutations/)
 
 9B8T_Q07864_24-1198_filtered_model0_checked_Repair/
