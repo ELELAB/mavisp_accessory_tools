@@ -1,5 +1,5 @@
 # find_cofactors.py
-# Copyright (C) 2025 Matteo Tiberti & Laura Kappel,
+# Copyright (C) 2025 Matteo Tiberti, Laura Kappel, Angeliki Vliora
 # Danish Cancer Institute
 
 # This program is free software: you can redistribute it and/or modify
@@ -73,8 +73,7 @@ def load_filter_file(filepath):
         return set(line.strip().upper() for line in f if line.strip())
 
 def calculate_ligand_contacts(ligand, protein_residues, distance_cutoff):
-    """ Calculate minimum distance and contacts for a ligand """
-    min_distance = np.inf
+    """ Calculate distance and contacts for a ligand """
     contacts = []
 
     for ligand_atom in ligand:
@@ -91,11 +90,9 @@ def calculate_ligand_contacts(ligand, protein_residues, distance_cutoff):
                     if contact_str not in contacts:
                         contacts.append(contact_str)
                         contact_found = True
-                if distance < min_distance:
-                    min_distance = distance
                 if contact_found:
                     break
-    return min_distance, contacts
+    return contacts
 
 def main():
 
@@ -107,47 +104,65 @@ def main():
     parser.add_argument("-p", "--pdb", help="PDB file to analyze for ligands")
     parser.add_argument("-s", "--start", type=int, help="Start residue of trimmed region")
     parser.add_argument("-e", "--end", type=int, help="End residue of trimmed region")
-    parser.add_argument("-c", "--cofactors", help="JSON file with cofactor definitions")
+    parser.add_argument("-c", "--cofactors", help="JSON file with cofactor definitions", default=None)
     parser.add_argument("-n", "--chain", help="Chain ID to analyze in PDB file")
     parser.add_argument("-d", "--distance", type=float, default=4.0, help="Distance cutoff for contacts in Angstroms (default: 4.0)")
-    parser.add_argument("-l", "--ions", help="File with list of ion names (one per line)")
-
+    parser.add_argument("-l", "--ions", help="File with list of ion names (one per line)", default=None)
 
     args = parser.parse_args()
 
     cofactor_list = set()
-    if args.cofactors:
+    if args.cofactors is not None:
         try:
             with open(args.cofactors, 'r') as f:
                 cofactors_data = json.load(f)
-            cofactor_list = set(cofactor.upper() for cofactor in cofactors_data.keys())
         except FileNotFoundError:
-            print(f"Warning: {args.cofactors} not found, using basic classification")
-            cofactor_list = set()
-    if args.ions:
-        ion_list = load_filter_file(args.ions)
-    else:
-        ion_list = set(['NA', 'K', 'CL', 'CA', 'MG', 'ZN', 'FE'])
+            print(f"ERROR: {args.cofactors} not found, exiting")
+            exit(1)
+        except IOError:
+            print(f"ERROR: {args.cofactors} not readable, exiting")
+            exit(1)
+        except json.JSONDecodeError:
+            print(f"ERROR: {args.cofactors} not in correct json format, exiting")
+            exit(1)
+
+        cofactor_list = set(cofactor.upper() for cofactor in cofactors_data.keys())
+    elif args.pdb:
+        print("WARNING: no cofactor file specified - no cofactor will be considered")
+        cofactor_list = set()
+
+    if args.ions is not None:
+        try:
+            ion_list = load_filter_file(args.ions)
+        except FileNotFoundError:
+            print(f"ERROR: {args.ions} not found, exiting")
+            exit(1)
+        except IOError:
+            print(f"ERROR: {args.ions} not readable, exiting")
+            exit(1)
+    elif args.pdb:
+        print("WARNING: no ions file specified - no ion will be considered")
+        ion_list = set()
 
     if not args.u and not args.i:
-        print("Error: Provide either -u or -i")
+        print("ERROR: Either -u or -i must be provided")
         sys.exit(1)
 
     if args.u and args.i:
-        print("Error: Provide either -u or -i, not both.")
+        print("ERROR: Provide either -u or -i, not both.")
         sys.exit(1)
 
     pdb_results = None
 
     if args.pdb:
         if not os.path.exists(args.pdb):
-            print(f"Error: PDB file {args.pdb} not found")
+            print(f"ERROR: PDB file {args.pdb} not found")
             sys.exit(1)
         if args.start is None or args.end is None:
-            print("Error: -s and -e required when using -p")
+            print("ERROR: -s and -e required when using -p")
             sys.exit(1)
         if args.chain is None:
-            print("Error: -n (chain ID) required when using -p")
+            print("ERROR: -n (chain ID) required when using -p")
             sys.exit(1)
 
         print(f"Analyzing PDB file: {args.pdb}")
@@ -159,9 +174,9 @@ def main():
         structure =pdb_parser.get_structure('protein', args.pdb)
         model = structure[0]
 
-
         protein_residues = []
         ligands = []
+
         for chain in model:
             if chain.id != args.chain:
                 continue
@@ -172,11 +187,11 @@ def main():
                         protein_residues.append(residue)
                 elif residue.id[0] != 'W':
                     ligands.append(residue)
+
         pdb_results = []
 
-
         for ligand in ligands:
-            min_distance, contacts = calculate_ligand_contacts(ligand, protein_residues, args.distance)
+            contacts = calculate_ligand_contacts(ligand, protein_residues, args.distance)
 
             if len(contacts) == 0:
                 category = "no contacts"
@@ -199,7 +214,6 @@ def main():
                 'residue_number': ligand.id[1],
                 'contact_residues': ';'.join(contacts),
                 'contact_count': len(contacts),
-                'shortest_distance': round(min_distance, 2),
                 'location_category': category,
                 'biological_label': ligand_type
             })
