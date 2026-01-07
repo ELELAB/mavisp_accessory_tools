@@ -1,6 +1,6 @@
 templates_path: templates
-foldx_mutations_input_directory: "/data/raw_data/computational_data/mutatex_data/marinara/pold1/complexes/dna/6TNY_APT_pdbs/cryo-em/mutations/6TNYapt_78-1107_dna_model0_checked_Repair/"
-mutation_list: "/data/raw_data/computational_data/mutatex_data/marinara/pold1/complexes/dna/6TNY_APT_pdbs/cryo-em/mutation_list.txt"
+foldx_mutations_input_directory: "/data/raw_data/computational_data/mutatex_data/marinara/pole/complexes/DNA/9B8S_27-1198_retromut_pdbs/mutations/9B8S_Q07864_27-1198_filtered_model0_checked_Repair"
+mutation_list: "/data/raw_data/computational_data/mutatex_data/marinara/pole/complexes/DNA/9B8S_27-1198_retromut_pdbs/mutation_list.txt"
 output:
    main_output_folder: "output"
    foldx_output_folder: "foldx_output"
@@ -10,4 +10,7 @@ scripts_parameters:
     interface: False
     output_file: "arpeggio_output.csv"
     keep_proximal: False
+  FoldXPlot:
+    xlabelsize: 8
+    ylabelsize: 14
 

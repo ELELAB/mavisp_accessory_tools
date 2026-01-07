@@ -10,4 +10,8 @@ scripts_parameters:
     interface: False
     output_file: "arpeggio_output.csv"
     keep_proximal: False
+  FoldXPlot:
+    xlabelsize: 8
+    ylabelsize: 14
+
 
