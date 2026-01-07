@@ -2,19 +2,23 @@
 
 ## **Description**  
 The `find_cofactor.py` script queries ALphafill for a Uniprot AC or a list of Uniprot ACs. It then extracts the list of potential cofactors for this/these protein(s). 
-Only Alphafill results with identity >=30% are included
-
-To run the script, the user must provide a single Uniprot AC or a MAVISp database index file (csv) including the column "UniProt AC".
+Only Alphafill results with identity >=30% are included. To run the script, the user must provide a single Uniprot AC or a MAVISp database index file (csv) including the column "UniProt AC".
 The user can adjust the name of the output folder with an optional last argument
 
+A second function of the script accepts a PDB and other input files, and identifies which cofactors are in contact with a specific protein. A contact
+is identified when two heavy atoms of protein and ligand are closer than a given distance threshold (4.5A by default).
+The two functions are independent from one another.
+
 ### **Output**
+
+For the first function:
+
 | Protein          | Heteroatom                |
 |------------------|---------------------------|
 | `Uniprot AC`     | `heteroatom1 heteroatom2` |
-| `P00325` 	   | `ACN APR CHD CNH CO`      |
+| `P00325` 	       | `ACN APR CHD CNH CO`      |
 
 The output contains only heteroatoms found for PDB entries with >=30% identity. 
-
 
 If the flag -f is used and you provide a txt file for filtering, the output will only contain heteroatoms from the list. All other heteroatoms will be ignored. 
 The filtered output will have the same format:
@@ -24,10 +28,10 @@ The filtered output will have the same format:
 | `Uniprot AC`     | `cofactor1 cofactor2  ` |
 | `P00325`         | `ACN APR CHD CNH CO`    |
 
-
-
 Finally, a txt file is provided with a list of unique heteroatoms found for all proteins in the input file. 
 
+The second function of the script outputs a csv file that contains the ligands identified in contacts with the protein.
+The second function is only active id a PDB file is provided (see below)
 
 ## **Requirements**
 module load python/3.10/modulefile 
@@ -39,6 +43,16 @@ The script uses 4 flags. Mandatory to use either -u or -i
 -o: output file prefix. If not provided, default is summary_output
 -f: Filtering file (txt). To use if only specific cofactors/heteroatoms should be included in the output. 
 
+furthermore, to activate the second function, the user needs to provide:
+
+-p: input pdb file
+-n: chain in the PDB file to be used as protein
+-s: start of the protein sequence to be considered
+-e: end of the protein sequence to be considered
+-d: maximum distance to identify contacts, in A
+-i: text file, with one name per line, of the ligand names to be considered atoms
+-c: input json files that contains known cofactor definitions
+
 
 # Run for one Uniprot AC
 python find_cofactor.py -u P00533
@@ -49,11 +63,12 @@ python find_cofactor.py -i index.csv
 # Run with cofactor filter list (to only keep heteroatoms that are in that list)
 python find_cofactor.py -i index.csv -f cofactors.txt -o summary_output
 
-
+# run with PDB contact identification
+python find_cofactor.py -u P40692 -p AF_MLH1a_1-341.pdb -s 1 -e 341 -c ../../../cofactors_dict.json -l ions.txt -n A
 
 ## **Example**
-cd example/find_cofactor
-python ../../find_cofactor.py -i index.csv -f ../annotate_heteroatoms/all_cofactors.txt -o summary_output
+
+see the `example` folder and subfolders
 
 # **Annotate cofactors**
 The annotate_cofactors.py script uses a json file to annotate cofactors from the PDB. The json file is a dictionary of cofactors in the PDB, and is compared to a user defined list of heteroatoms. 
@@ -79,16 +94,3 @@ python ../../annotate_heteroatoms.py -d ../../cofactors_dict.json -c ../find_cof
 ## **Output**
 1) A csv with all your heteroatoms annotated with the json dictionary, "all_heteroatoms_annotated.csv ". If the heteroatom is not in the list it is annotated as "not a cofactor". The remaining columns contain annotations downloaded from PDB.
 2) A list of only the heteroatoms that were cofactors (according to the json dictionary), "cofactor_only.txt".  
-
-## **New Feature: PDB Ligand Analysis**
-
-New arguments: -p/--pdb, -s/--start, -e/--end for PDB file analysis
-Finds ligand contacts within 4Å and categorizes as inside/cross/outside trimmed regions
-Classifies ligands using cofactors_dict.json
-Outputs detailed CSV with contacts, distances, and classifications
-
-## **Improvements after first round of revision**
-
-Refactored nested loops into simpler approach
-Used pandas for all CSV output
-Better variable handling and error checking
