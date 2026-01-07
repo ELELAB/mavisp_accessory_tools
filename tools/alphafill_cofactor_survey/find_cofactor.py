@@ -106,7 +106,7 @@ def main():
     parser.add_argument("-e", "--end", type=int, help="End residue of trimmed region")
     parser.add_argument("-c", "--cofactors", help="JSON file with cofactor definitions", default=None)
     parser.add_argument("-n", "--chain", help="Chain ID to analyze in PDB file")
-    parser.add_argument("-d", "--distance", type=float, default=4.0, help="Distance cutoff for contacts in Angstroms (default: 4.0)")
+    parser.add_argument("-d", "--distance", type=float, default=4.5, help="Distance cutoff for contacts in Angstroms (default: 4.5)")
     parser.add_argument("-l", "--ions", help="File with list of ion names (one per line)", default=None)
 
     args = parser.parse_args()
