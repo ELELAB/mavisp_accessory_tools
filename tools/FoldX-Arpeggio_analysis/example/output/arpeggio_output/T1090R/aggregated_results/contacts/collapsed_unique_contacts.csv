@@ -1,0 +1,18 @@
+catalytic_residue,catalytic_residue_pos,catalytic_residue_chain_id,catalytic_residue_atom,second_sphere_residue,second_sphere_pos,second_sphere_residue_atom,second_sphere_residue_chain_id,contact,distance,model,origin,interacting_entities,type
+ARG,1090,A,CB,LYS,1050,CD,A,"proximal, hydrophobic",4.24_4.32,model_3_model_4,MUT,INTER,atom-atom
+ARG,1090,A,CB,LYS,1050,CG,A,"proximal, hydrophobic",4.13_4.12_3.88,model_0_model_1_model_4,MUT,INTER,atom-atom
+ARG,1090,A,CD,DT,33,O1P,T,"proximal, weak_polar",3.46,model_2,MUT,INTER,atom-atom
+ARG,1090,A,CD,LYS,1050,O,A,"vdw, weak_polar",3.3,model_2,MUT,INTER,atom-atom
+ARG,1090,A,CD,SER,1051,CA,A,vdw,3.46,model_2,MUT,INTER,atom-atom
+ARG,1090,A,CD,THR,1052,N,A,vdw,3.27_3.32,model_1_model_4,MUT,INTER,atom-atom
+ARG,1090,A,CG,DT,33,O1P,T,"proximal, weak_polar",3.36_3.45_3.36_3.4,model_0_model_1_model_3_model_4,MUT,INTER,atom-atom
+ARG,1090,A,CG,LYS,1050,CG,A,"proximal, hydrophobic",4.27,model_4,MUT,INTER,atom-atom
+ARG,1090,A,CZ,DA,32,O1P,T,"proximal, ionic",3.83_3.87_3.86,model_0_model_1_model_3,MUT,INTER,atom-atom
+ARG,1090,A,NE,DA,32,C4*,T,vdw,3.34_3.28,model_1_model_3,MUT,INTER,atom-atom
+ARG,1090,A,NE,DA,32,O3*,T,"proximal, polar",3.33,model_2,MUT,INTER,atom-atom
+ARG,1090,A,NE,DA,32,O4*,T,"proximal, polar",3.34,model_2,MUT,INTER,atom-atom
+ARG,1090,A,NE,LYS,1050,O,A,"proximal, polar",3.21,model_2,MUT,INTER,atom-atom
+ARG,1090,A,NH1,DT,33,C5*,T,vdw,3.34,model_2,MUT,INTER,atom-atom
+ARG,1090,A,NH1,THR,1052,CB,A,vdw,3.28,model_3,MUT,INTER,atom-atom
+ARG,1090,A,NH2,DA,31,O3*,T,"vdw, polar",3.13_3.12,model_0_model_1,MUT,INTER,atom-atom
+ARG,1090,A,NH2,DA,32,O5*,T,"proximal, polar",3.26_3.26,model_0_model_1,MUT,INTER,atom-atom

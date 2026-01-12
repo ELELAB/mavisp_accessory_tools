@@ -10,6 +10,7 @@ This repository provides accessory tools associated with papers and activities o
   *"From Structure to Function: Interpreting the Effects of DNA Polymerase Variants in Cancer"*
 - **get_second_sphere_residues.py** Python script designed to identify the second coordination sphere residues of catalytic residues provided as input.
   *"From Structure to Function: Interpreting the Effects of DNA Polymerase Variants in Cancer"*
+- **ArpeggioInteractionPipeline.py**  Python script for analyzing atomic interactions in protein and molecular structures using Arpeggio. It supports conversion of PDB files to CIF format, validation of residues from input files, computation of intra- and inter-molecular contacts, filtering of low-quality or clashing contacts, and generation of single-point or saturation mutation lists for residues involved in interactions. 
 - **alphafill_cofactor_survey** Python script querying AlphaFill for a Uniprot AC or a list of Uniprot AC's to find and list potential cofactors.
 - **stability_benchmark_sim_length** uses a Python script that visualizes the performance of different simulation times against a gold standard using confusion matrices, calculating key metrics such as sensitivity, specificity, accuracy, precision, F1 score, and structure length for one or multiple genes.
 - **consensus_benchmark_sim_length** is a Python script that generates confusion matrix plots and calculates performance metrics for MAVISP stability classification across ensemble datasets from different simulation times, comparing them to a gold-standard time and producing both gene-specific and aggregated results with supporting CSV files. 
@@ -23,6 +24,8 @@ This repository provides accessory tools associated with papers and activities o
 - **uniprot2refseq**: a script to retrieve the correct refseq ID given a uniprot ID - to use before the mavisp_automatization step to ensure the proper match between identifiers
 - **FoldX-Arpeggio_analysis**: The Snakefile implements a fully automated pipeline that takes as input the FoldX results organized into folders named according to the wild-type (WT) residue, chain, and position (e.g., AA25, FA102). For each residue, the workflow extracts the energetic contributions computed by FoldX and visualizes them through bar plots for improved interpretability. It then generates all mutations listed in the FoldX mutation file, selects the corresponding structural models, and runs Arpeggio on both WT and mutant structures. Based on these results, the pipeline produces comparative WT–mutant interaction files that highlight which interactions are unique, lost, or altered in the mutant. Finally, it generates “collapsed” summary files that aggregate the energetic and structural contributions across all models or replicates for each mutation, providing a concise overview of the mutation’s predicted impact.
 - **RaSP_ensemble_mode**: Contains a script for cleanup and RaSP analysis for multiple frames from ensemble mode, as well as preparatory scripts for inputs such as multiple separate PDBs from clustering or one PDB with concatenated 25 frames. To use for stability analysis in ensemble mode.  
+- **ss_bonds**: This module assesses how cysteine-altering variants may disrupt native disulfide bonds or enable new ones by analyzing structural geometry, rotamer accessibility, and ensembles of FoldX-generated models. Developed for a study currently in progress:  
+  *“Decoding ATG9A Variation: A Comprehensive Structural Investigation of All Missense Variants”*  
   
 ## Citations  
 
@@ -33,3 +36,4 @@ If you use this repository, please cite the following works:
 - Arnaudi, Matteo et al. *"From Structure to Function: Interpreting the Effects of DNA Polymerase Variants in Cancer"*.Manuscript under review  
 - Kishore, Jaganathan et al. *"Predicting Splicing from Primary Sequence with Deep Learning"*
 - Zeng, Tony et al. *"Predicting RNA splicing from DNA sequence using Pangolin"*
+- Utichi, Mattia et al. *“Decoding ATG9A Variation: A Comprehensive Structural Investigation of All Missense Variants”*  
