@@ -2,6 +2,7 @@
 import pandas as pd
 import requests
 import time
+import sys
 
 INPUT_FILE = "mega_train.csv"
 OUTPUT_FILE = "mega_cleaned_full.csv"
@@ -37,74 +38,85 @@ def get_uniprot_rcsb(pdb_id):
         response = requests.post(GRAPHQL_URL, json={"query": GRAPHQL_QUERY, "variables": variables})
         response.raise_for_status()
     except Exception as e:
-        print(f"[RCSB ERROR] {pdb_id}: {e}")
-        pdb_cache[pdb_id] = []
-        return []
+        raise RuntimeError(f"[RCSB ERROR] {pdb_id}: {e}")
 
-    data = response.json().get("data", {}).get("entry", {})
-    if not data:
-        print(f"[RCSB ERROR] {pdb_id}: No data returned")
-        pdb_cache[pdb_id] = []
-        return []
+    try:
+        entry = response.json()["data"]["entry"]
+        entities = entry["polymer_entities"]
+    except KeyError as e:
+        raise RuntimeError(f"{pdb_id}: unexpected GraphQL response, missing {e}")
 
     uniprots = []
-    for entity in data.get("polymer_entities", []):
+    for entity in entities:
         container = entity.get("rcsb_polymer_entity_container_identifiers") or {}
         refs = container.get("reference_sequence_identifiers") or []
+
         for ref in refs:
             if ref.get("database_name") == "UniProt":
                 uniprots.append(ref.get("database_accession"))
+
+    if not uniprots:
+        print(
+            f"[RCSB INFO] {pdb_id}: No UniProt mappings found in RCSB. BLAST search will be attempted in step 2.")
+
     pdb_cache[pdb_id] = uniprots
     return uniprots
 
-# Load dataset
-df = pd.read_csv(INPUT_FILE)
+def main():
+    # Load dataset
+    df = pd.read_csv(INPUT_FILE)
 
-# Keep only the first row per WT_name
-df_unique = df.groupby("WT_name", as_index=False).first()
+    # Keep only the first row per WT_name
+    df_unique = df.groupby("WT_name", as_index=False).first()
 
-# Prepare cleaned dataset in long format
-cleaned_rows = []
-for idx, row in df_unique.iterrows():
-    wt_name = row["WT_name"]
-    pdb_like = wt_name.endswith(".pdb") and len(wt_name) == 8
-    pdb_id = wt_name.replace(".pdb", "") if pdb_like else None
+    # Prepare cleaned dataset in long format
+    cleaned_rows = []
+    for idx, row in df_unique.iterrows():
+        wt_name = row["WT_name"]
+        pdb_like = wt_name.endswith(".pdb") and len(wt_name) == 8
+        pdb_id = wt_name.replace(".pdb", "") if pdb_like else None
 
-    if pdb_like:
-        uniprot_ids = get_uniprot_rcsb(pdb_id)
-        if not uniprot_ids:
+        if pdb_like:
+            uniprot_ids = get_uniprot_rcsb(pdb_id)
+            if not uniprot_ids:
+                cleaned_rows.append({
+                    "WT_name": wt_name,
+                    "pdb_id": pdb_id,
+                    "uniprot_id": None,
+                    "wt_seq": row["wt_seq"],
+                    "protein_name": row["name"]
+                })
+            else:
+                for uid in uniprot_ids:
+                    cleaned_rows.append({
+                        "WT_name": wt_name,
+                        "pdb_id": pdb_id,
+                        "uniprot_id": uid,
+                        "wt_seq": row["wt_seq"],
+                        "protein_name": row["name"]
+                    })
+            # Sleep to avoid overloading API
+            time.sleep(0.1)
+        else:
             cleaned_rows.append({
                 "WT_name": wt_name,
-                "pdb_id": pdb_id,
+                "pdb_id": None,
                 "uniprot_id": None,
                 "wt_seq": row["wt_seq"],
                 "protein_name": row["name"]
             })
-        else:
-            for uid in uniprot_ids:
-                cleaned_rows.append({
-                    "WT_name": wt_name,
-                    "pdb_id": pdb_id,
-                    "uniprot_id": uid,
-                    "wt_seq": row["wt_seq"],
-                    "protein_name": row["name"]
-                })
-        # Sleep to avoid overloading API
-        time.sleep(0.1)
-    else:
-        cleaned_rows.append({
-            "WT_name": wt_name,
-            "pdb_id": None,
-            "uniprot_id": None,
-            "wt_seq": row["wt_seq"],
-            "protein_name": row["name"]
-        })
 
-# Create DataFrame and save
-cleaned_df = pd.DataFrame(cleaned_rows)
-cleaned_df.reset_index(drop=True, inplace=True)
-cleaned_df.to_csv(OUTPUT_FILE, index=False)
+    # Create DataFrame and save
+    cleaned_df = pd.DataFrame(cleaned_rows)
+    cleaned_df.reset_index(drop=True, inplace=True)
+    cleaned_df.to_csv(OUTPUT_FILE, index=False)
 
-print(f"Full cleaned dataset saved to {OUTPUT_FILE}")
-print(f"Rows in output: {len(cleaned_df)}")
+    print(f"Full cleaned dataset saved to {OUTPUT_FILE}")
+    print(f"Rows in output: {len(cleaned_df)}")
 
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as e:
+        print(e)
+        sys.exit(1)
