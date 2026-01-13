@@ -1,4 +1,21 @@
 #!/usr/bin/env python3
+
+# Copyright (C) 2025 Eszter Toldi
+# Technical University of Denmark, Danish Cancer Institute
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 import pandas as pd
 from Bio.Blast import NCBIWWW, NCBIXML
 import time
@@ -9,12 +26,15 @@ OUTPUT_FILE = "mega_cleaned_full_with_blast.csv"
 
 def run_blast(seq, identity_threshold=30, coverage_threshold=70):
     """Run BLASTp against SwissProt and return UniProt IDs + identities."""
-    try:
-        result_handle = NCBIWWW.qblast("blastp", "swissprot", seq)
-        blast_record = NCBIXML.read(result_handle)
-    except Exception as e:
-        print(f"[BLAST ERROR] {e}")
-        return []
+    for attempt in range(3):
+        try:
+            result_handle = NCBIWWW.qblast("blastp", "swissprot", seq, entrez_query="txid9606[ORGN]")
+            blast_record = NCBIXML.read(result_handle)
+            break
+        except Exception as e:
+            if attempt == 2:
+                raise RuntimeError(f"[BLAST ERROR] BLAST failed after 3 attempts: {e}")
+            time.sleep(1)
 
     hits = []
     for alignment in blast_record.alignments:

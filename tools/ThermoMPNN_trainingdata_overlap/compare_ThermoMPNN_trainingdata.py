@@ -1,4 +1,21 @@
 #!/usr/bin/env python3
+
+# Copyright (C) 2025 Eszter Toldi
+# Technical University of Denmark, Danish Cancer Institute
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 import os
 import pandas as pd
 import argparse
@@ -15,20 +32,23 @@ def main():
     # Parse command-line arguments
     parser = argparse.ArgumentParser(description="Compare index.csv with a training csv.")
     parser.add_argument(
-        "index_csv_path",
+        "-i", "--index",
+        required=True,
         type=str,
         help="Path to the index.csv file from MAVISp."
     )
+
     parser.add_argument(
-        "training_csv_path",
+        "-t", "--training",
+        required=True,
         type=str,
-        help="Path to the training csv from ThermoMPNN to compare against."
+        help="Path to the training csv from ThermoMPNN."
     )
     args = parser.parse_args()
 
     # Load CSVs
-    index_df = load_csv(args.index_csv_path)
-    training_df = load_csv(args.training_csv_path)
+    index_df = load_csv(args.index)
+    training_df = load_csv(args.training)
 
     # Standardize column names
     combined_uniprot_col = "uniprot_id"
