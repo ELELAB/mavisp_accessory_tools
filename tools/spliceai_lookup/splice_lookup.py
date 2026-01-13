@@ -128,7 +128,7 @@ parser.add_argument("-i", "--input_file", required=True, help="CSV with 'Mutatio
 parser.add_argument("-c","--config_file", type=str, help="YAML config specifying column names (required if using -f/--maf)")
 parser.add_argument("-d", "--distance", required=True, help="Distance parameter for splicing models")
 parser.add_argument("-t", "--time_delay", type=int, default=20, help="Delay between API queries (default: 20s)")
-parser.add_argument("-g", "--genome_build_path", type=str, help="Delay between API queries (default: 20s)")
+parser.add_argument("-g", "--genome_build_path", type=str, help="Path containing the sequenced genome in .fa format for the 38 and 19 (37) genome build")
 group = parser.add_mutually_exclusive_group(required=True)
 group.add_argument("-m","--mavisp", action="store_true", help="Use this if input has Mutation | HGVSg format")
 group.add_argument("-f","--maf", action="store_true", help="Use this if input is a full MAF file | HGVSc format")

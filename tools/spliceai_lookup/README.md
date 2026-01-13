@@ -101,19 +101,19 @@ N.B The position is calculated relative to the genomic coordinate of the variant
 
 The type of splicing alteration caused by the variant on functional splice sites.
 
-- **acceptor gain** the nucleotide specified in the "affected_nucleotide_position" gains splicing acceptor activity
+- **acceptor gain:** the nucleotide specified in the "affected_nucleotide_position" gains splicing acceptor activity
 
-- **donor gain** the nucleotide specified in the "affected_nucleotide_position" as gains splicing donor activity
+- **donor gain:** the nucleotide specified in the "affected_nucleotide_position" as gains splicing donor activity
 
-- **acceptor loss** the nucleotide specified in the "affected_nucleotide_position" looses splicing acceptor activity
+- **acceptor loss:** the nucleotide specified in the "affected_nucleotide_position" looses splicing acceptor activity
 
-- **donor loss** the nucleotide specified in the "affected_nucleotide_position" looses splicing donor activity
+- **donor loss:** the nucleotide specified in the "affected_nucleotide_position" looses splicing donor activity
 
  For Pangolin the consequence typologies are the following:
 
-- **splice gain** the nucleotide specified in the "affected_nucleotide_position" aquires splicing activity
+- **splice gain:** the nucleotide specified in the "affected_nucleotide_position" aquires splicing activity
 
-- **splice loss** the nucleotide specified in the "affected_nucleotide_position" looses the splicing activity
+- **splice loss:** the nucleotide specified in the "affected_nucleotide_position" looses the splicing activity
 
 ### Δ_score,
 
@@ -148,26 +148,26 @@ The script aggregates this information into a CSV file, grouping the entries by 
 
 The script requires the following flags:
 
-- **-i, --input_flag** csv file containing the Mutations and the corresponding genomic coordinates
-- **-d, --distance** defines the genomic region analyzed for splicing alterations caused by the mutation.
-- **-g, --genome_build_path** defines the path containing the sequenced genome in .fa format for the 38 and 19 (37) genome build
+- **-i, --input_flag:** csv file containing the Mutations and the corresponding genomic coordinates
+- **-d, --distance:** defines the genomic region analyzed for splicing alterations caused by the mutation.
+- **-g, --genome_build_path:** defines the path containing the sequenced genome in .fa format for the 38 and 19 (37) genome build
 - **-m, --mavisp** flag to be specified in case the input file follow the mavsip format
-- **-f, --maf** flag to be specified in case the input file follow the MAF format.
-- **-c, --config_file** config file specifying the name of the columns required by the scripts (only when -f,--maf flag is specified)
+- **-f, --maf:** flag to be specified in case the input file follow the MAF format.
+- **-c, --config_file:** config file specifying the name of the columns required by the scripts (only when -f,--maf flag is specified)
 
 -m and -f columns are mutually exclusive.
 
-An optional column can be customized in order to modifiy the waiting time between two consecutive API requests:
+An optional flag can be specified in order to modifiy the waiting time between two consecutive API requests:
 
-- **-t,--time_delay** Specifies the delay between two consecutive API queries (Default: 20 seconds).
+- **-t,--time_delay:** Specifies the delay between two consecutive API queries (Default: 20 seconds).
 
 ### Mavisp format
 
 The csv file in the MAVISp format must be provided along with the -m --mavisp flag and it must contain the following columns:
 
-- **Mutation** mutation in one-letter code  (i.e S2P)
+- **Mutation:** mutation in one-letter code  (i.e S2P)
 
-- **HGVSg** genomic coordinate of the Mutation expressed in the following format ("genome_version","chromosome number":g."genomic_coordinate""WT_nucleotide">"altered_nucleotide")
+- **HGVSg:** genomic coordinate of the Mutation expressed in the following format ("genome_version","chromosome number":g."genomic_coordinate""WT_nucleotide">"altered_nucleotide")
 
 Here an example of input file in the MAVISp format:
 
@@ -185,21 +185,21 @@ N.B the genomic coordinates must be provided as strings. If multiple coordinates
 
 The csv file in MAF format be provided along with the -f --maf flag nad it must contain the following columns:
 
-- **NCBI_Build** information about the genome reference. it must be GRCh38 or GRCh37.
+- **NCBI_Build:** information about the genome reference. it must be GRCh38 or GRCh37.
 
-- **Chromosome** a str or int object indicating a number between 1 to 22 or X or Y for not autosomal chromosomes
+- **Chromosome:** a str or int object indicating a number between 1 to 22 or X or Y for not autosomal chromosomes
 
-- **Start_Position**  a str or int object representing a number indicating the starting position of the mutation on the genome
+- **Start_Position:**  a str or int object representing a number indicating the starting position of the mutation on the genome
 
-- **End_Position** a str or int object representing a number indicating the ending position of the mutation on the genome
+- **End_Position:** a str or int object representing a number indicating the ending position of the mutation on the genome
 
-- **Reference_Allele** str indicating the WT state of the nucleotide/s affected by the mutation
+- **Reference_Allele:** str indicating the WT state of the nucleotide/s affected by the mutation
 
-- **Tumor_Seq_Allele2** str indicating the mutated nucleotide/s affected 
+- **Tumor_Seq_Allele2:** str indicating the mutated nucleotide/s affected 
 
-- **Transcript_ID** str indicating the trancript id to which the variant under investigation belongs.
+- **Transcript_ID:** str indicating the trancript id to which the variant under investigation belongs.
 
-- **HGSVp_Short** str indicating the mutation expressed in short HGVSp format (i.e p.T462M)
+- **HGSVp_Short:** str indicating the mutation expressed in short HGVSp format (i.e p.T462M)
 
 Here an example of input file in MAF format:
 |Transcript_ID|NCBI_Build|Chromosome|Start_Position|End_Position|Reference_Allele|Tumor_Seq_Allele2|HGVSp_Short|
@@ -236,9 +236,9 @@ Modify only the strings after the ":"
 
 The script generates three types of output files:
 
-- **spliceai_df_output.csv** a csv file containing the output file form SpliceAI tools
+- **spliceai_df_output.csv:** a csv file containing the output file form SpliceAI tools
 
-- **pangolin_df_output.csv** a csv file containing the output file form SpliceAI tools
+- **pangolin_df_output.csv:** a csv file containing the output file form SpliceAI tools
 
 - **not_found_variants.csv**
 
@@ -246,11 +246,11 @@ The script generates three types of output files:
 
 The first two files contain the following columns 
 
-- **Mutation** Input mutation
+- **Mutation:** Input mutation
 
-- **variant_coordinate** genomic coordinate of the variant under investigation
+- **variant_coordinate:** genomic coordinate of the variant under investigation
 
-- **affected_nucleotide_position** position under investigation affected by the mutation
+- **affected_nucleotide_position:** position under investigation affected by the mutation
 
 - **Δ_tpye** consequence on the position under investigation in terms of splicing acceptor or donor with gain or loss for SpliceAI, or spilicing gain or loss for Pangolin
 
@@ -297,11 +297,11 @@ The API and webserver may not be always synchronized. Therefore, predictions for
 
 If some variants have been wrongly annotated or SpliceAI or Pangolin returned some errors during the analysis, they are annotated in the entry_not_found.csv containing the following columns:
 
-- **Mutation** the input mutation as reported in the input file.
+- **Mutation:** the input mutation as reported in the input file.
 
-- **HGVSg** the genomic coordinate as reported in the input file.
+- **HGVSg:** the genomic coordinate as reported in the input file.
 
-- **note** it reports the ERROR for which SpliceAI or Pangolin failed.
+- **note:** it reports the ERROR for which SpliceAI or Pangolin failed.
 
 Here an example of entry_not_found.csv file:
 
