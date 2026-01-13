@@ -138,10 +138,13 @@ rule plot_foldx_deltas:
     output:
         directory(os.path.join(foldx_out, "plots"))
     params:
-        outdir = os.path.join(foldx_out, "plots")
+        outdir = os.path.join(foldx_out, "plots"),
+        xlabelsize = config["scripts_parameters"]["FoldXPlot"].get("xlabelsize", 10),
+        ylabelsize = config["scripts_parameters"]["FoldXPlot"].get("ylabelsize", 12)
     shell:
         """
-        python {input.script} -i {input.csv} -o {params.outdir}
+        python {input.script} -i {input.csv} -o {params.outdir} \
+            --xlabelsize {params.xlabelsize} --ylabelsize {params.ylabelsize}
         """
 
 # ----------------------------------------------------------

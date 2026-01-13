@@ -1,0 +1,10 @@
+catalytic_residue,catalytic_residue_pos,catalytic_residue_chain_id,catalytic_residue_atom,second_sphere_residue,second_sphere_pos,second_sphere_residue_atom,second_sphere_residue_chain_id,contact,distance,interacting_entities,type
+ARG,1090,A,O,SER,1055,OG,A,"vdw, polar",3.05,INTER,atom-atom
+ARG,1090,A,N,PRO,1088,O,A,"proximal, polar",3.35,INTER,atom-atom
+ARG,1090,A,CD,DT,33,O1P,T,"proximal, weak_polar",3.46,INTER,atom-atom
+ARG,1090,A,CD,SER,1051,CA,A,vdw,3.46,INTER,atom-atom
+ARG,1090,A,CD,LYS,1050,O,A,"vdw, weak_polar",3.3,INTER,atom-atom
+ARG,1090,A,NE,DA,32,O4*,T,"proximal, polar",3.34,INTER,atom-atom
+ARG,1090,A,NE,DA,32,O3*,T,"proximal, polar",3.33,INTER,atom-atom
+ARG,1090,A,NH1,DT,33,C5*,T,vdw,3.34,INTER,atom-atom
+ARG,1090,A,NE,LYS,1050,O,A,"proximal, polar",3.21,INTER,atom-atom

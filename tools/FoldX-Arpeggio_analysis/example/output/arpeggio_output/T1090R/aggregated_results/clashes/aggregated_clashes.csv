@@ -1,0 +1,36 @@
+catalytic_residue,catalytic_residue_pos,catalytic_residue_chain_id,catalytic_residue_atom,second_sphere_residue,second_sphere_pos,second_sphere_residue_atom,second_sphere_residue_chain_id,contact,distance,interacting_entities,type,model
+ARG,1090,A,NH2,DA,32,O1P,T,"vdw_clash, ionic, polar",2.7,INTER,atom-atom,model_0
+ARG,1090,A,NH2,DA,32,P,T,vdw_clash,3.24,INTER,atom-atom,model_0
+ARG,1090,A,N,PRO,1088,C,A,vdw_clash,3.2,INTER,atom-atom,model_0
+ARG,1090,A,NE,DA,32,C4*,T,vdw_clash,3.19,INTER,atom-atom,model_0
+ARG,1090,A,CG,DA,32,O3*,T,"vdw_clash, weak_polar",2.96,INTER,atom-atom,model_0
+ARG,1090,A,O,SER,1055,CB,A,"vdw_clash, weak_polar",3.2,INTER,atom-atom,model_0
+ARG,1090,A,NH2,DA,32,C5*,T,vdw_clash,3.07,INTER,atom-atom,model_0
+ARG,1090,A,CZ,DA,32,C5*,T,vdw_clash,3.31,INTER,atom-atom,model_0
+ARG,1090,A,NH2,DA,32,O1P,T,"vdw_clash, ionic, polar",2.75,INTER,atom-atom,model_1
+ARG,1090,A,NH2,DA,32,P,T,vdw_clash,3.25,INTER,atom-atom,model_1
+ARG,1090,A,N,PRO,1088,C,A,vdw_clash,3.2,INTER,atom-atom,model_1
+ARG,1090,A,CG,DA,32,O3*,T,"vdw_clash, weak_polar",3.04,INTER,atom-atom,model_1
+ARG,1090,A,O,SER,1055,CB,A,"vdw_clash, weak_polar",3.2,INTER,atom-atom,model_1
+ARG,1090,A,NH2,DA,32,C5*,T,vdw_clash,3.03,INTER,atom-atom,model_1
+ARG,1090,A,CZ,DA,32,C5*,T,vdw_clash,3.27,INTER,atom-atom,model_1
+ARG,1090,A,O,SER,1055,CB,A,"vdw_clash, weak_polar",3.2,INTER,atom-atom,model_2
+ARG,1090,A,N,PRO,1088,C,A,vdw_clash,3.2,INTER,atom-atom,model_2
+ARG,1090,A,NE,DA,32,C4*,T,vdw_clash,3.22,INTER,atom-atom,model_2
+ARG,1090,A,CZ,DA,32,O4*,T,vdw_clash,3.06,INTER,atom-atom,model_2
+ARG,1090,A,NH2,DA,32,O4*,T,"vdw_clash, polar",3.02,INTER,atom-atom,model_2
+ARG,1090,A,CZ,LYS,1050,O,A,vdw_clash,3.0,INTER,atom-atom,model_2
+ARG,1090,A,NH1,LYS,1050,O,A,"vdw_clash, polar",2.77,INTER,atom-atom,model_2
+ARG,1090,A,CG,DA,32,O3*,T,"vdw_clash, weak_polar",3.13,INTER,atom-atom,model_2
+ARG,1090,A,CD,DA,32,O3*,T,"vdw_clash, weak_polar",2.98,INTER,atom-atom,model_2
+ARG,1090,A,N,PRO,1088,C,A,vdw_clash,3.2,INTER,atom-atom,model_3
+ARG,1090,A,NH1,THR,1052,CG2,A,vdw_clash,3.18,INTER,atom-atom,model_3
+ARG,1090,A,NH2,DA,32,O1P,T,"vdw_clash, ionic, polar",2.74,INTER,atom-atom,model_3
+ARG,1090,A,CG,DA,32,O3*,T,"vdw_clash, weak_polar",2.96,INTER,atom-atom,model_3
+ARG,1090,A,O,SER,1055,CB,A,"vdw_clash, weak_polar",3.2,INTER,atom-atom,model_3
+ARG,1090,A,O,SER,1055,CB,A,"vdw_clash, weak_polar",3.2,INTER,atom-atom,model_4
+ARG,1090,A,N,PRO,1088,C,A,vdw_clash,3.2,INTER,atom-atom,model_4
+ARG,1090,A,CZ,DA,32,C5*,T,vdw_clash,3.32,INTER,atom-atom,model_4
+ARG,1090,A,CZ,DA,32,C4*,T,vdw_clash,3.23,INTER,atom-atom,model_4
+ARG,1090,A,NE,DA,32,C4*,T,vdw_clash,3.09,INTER,atom-atom,model_4
+ARG,1090,A,CG,DA,32,O3*,T,"vdw_clash, weak_polar",3.0,INTER,atom-atom,model_4

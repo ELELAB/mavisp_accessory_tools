@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The Snakefile implements a fully automated pipeline that takes as input the FoldX results organized into folders named by the wild-type (WT) residue chain and position (e.g., AA25, FA102, …).
+The Snakefile implements a fully automated pipeline that takes as input the FoldX results obtained through the Mutatex wrapper, organized into folders named by the wild-type (WT) residue chain and position (e.g., AA25, FA102, …).
 For each residue, the workflow:
 
 - extracts energetic contributions from FoldX, plotting them with bars plot for a better visualization
@@ -24,9 +24,9 @@ Cancer Systems Biology, Department of Health and Technology, Section for Bioinfo
 
 ## Description
 
-The Snakemake pipeline automates the analysis of mutation effects by combining energetic contributions from FoldX with geometrical distance analysis through Arpeggio. The Snakefile takes as input a configuration file specifying the FoldX output path, the mutation list, and the desired name for the output directories.
-The workflow automatically parses the WT residue, position, and chain from the FoldX folder structure. It loads the list of mutant amino acid letters, generates all possible mutations in the format W25F, W25Y, etc., and sets up the output directories and parameters defined in the YAML configuration file.
-The pipeline executes the script extract_foldx_energetic_contributions.py to parse the FoldX output, extracting for each mutation the energetic contributions of both the mutant and the WT across the five models generated during the FoldX run. It then computes, for each model, the difference between mutant and WT for each energetic term and aggregates these values into output file called delta.csv for inspection. Additionally, it identifies all energetic contributions where the mutant–WT subtraction results in a positive value (indicating a destabilizing effect) and produces a positives.csv file summarizing these contributions for all mutations.The pipeline also generates two additional files. The first called delta_mean.csv reports, for each energetic term, the difference between the mean value across the five mutant models and the mean value across the five WT models, together with the corresponding standard deviations. It then extracts those average values that remain positive (destabilizing after averaging across WT and mutant models) and outputs them together with the associated WT and mutant standard deviations in a file called delta_mean.csv. Finally, a file named statistics.csv summarizes information such as the number of residues involved in interfaces, clashes, and other relevant metrics.
+The Snakemake pipeline automates the analysis of mutation effects by combining energetic contributions from FoldX with geometrical distance analysis through Arpeggio. The Snakefile takes as input a configuration file specifying the MutateX output path, the mutation list, and the desired name for the output directories.
+The workflow automatically parses the WT residue, position, and chain from the MutateX folder structure. It loads the list of mutant amino acid letters, generates all possible mutations in the format W25F, W25Y, etc., and sets up the output directories and parameters defined in the YAML configuration file.
+The pipeline executes the script extract_foldx_energetic_contributions.py to parse the FoldX output, extracting for each mutation the energetic contributions of both the mutant and the WT across the five models generated during the FoldX run. It then computes, for each model, the difference between mutant and WT for each energetic term and aggregates these values into output file called delta.csv for inspection. Additionally, it identifies all energetic contributions where the mutant–WT subtraction results in a positive value (indicating a destabilizing effect) and produces a positives.csv file summarizing these contributions for all mutations. The pipeline also generates two additional output files. The file delta_mean.csv reports, for each energetic contribution, the mean and standard deviation of the energy differences computed between mutant and wild-type models. Specifically, for each of the five FoldX models, the energetic contribution of the corresponding wild-type model is subtracted from that of the mutant model, yielding five paired differences. The reported mean value corresponds to the average of these five differences, while the associated standard deviation reflects the variability across the five paired mutant–wild-type comparisons.
 Next, the pipeline processes the FoldX repair models for each mutant and the validated WT _repair.pdb structure, generating the necessary input files for running Arpeggio (see the mavisp-accessory_tools repository, https://github.com/ELELAB/mavisp_accessory_tools/). Arpeggio is executed on the WT model and on each of the five models for every mutant. After the analysis, the pipeline aggregates all contacts computed across the five models into a single file, distinguishing between contacts and clashes. It then extracts those interactions present in the mutants but absent in the WT, and those present in the WT but lost in the mutants, saving each category into separate files.
 
 Finally, the pipeline collapses these files across models, retaining only those contacts and clashes consistently present in all five mutant models.
@@ -44,9 +44,9 @@ Required Software
 - re
 - os
 
-FoldX (already executed; pipeline starts from FoldX outputs)
+MutateX results (already executed; pipeline starts from the FoldX outputs)
 
-Arpeggio installed in the active environment
+Arpeggio installed in the active environment inside a Docker container
 
 ## Input
 
@@ -54,11 +54,11 @@ The Snakefile takes as input a configuration file with the following structure:
 
 **templates_path**: path to the folder containing the templates and scripts required by the pipeline
 
-**foldx_mutations_input_directory**: path to the FoldX output directory, which must contain one subfolder per mutated position, including the WT and mutant FoldX models and the associated energetic contributions
+**foldx_mutations_input_directory**: path to the MutateX output directory, which must contain one subfolder per mutated position, including the WT and mutant FoldX models and the associated energetic contributions
 
 **mutation_list**: list of mutations used for the FoldX run
 
-**main_output_folder**: main directory where the pipeline will store outputs from both FoldX and Arpeggio analyses
+**main_output_folder**: main directory where the pipeline will store outputs from both MutateX and Arpeggio analyses
 
 **foldx_output_folder**: name of the subfolder to store the processed FoldX energetic readouts
 
@@ -68,7 +68,7 @@ The Snakefile takes as input a configuration file with the following structure:
 
 ### foldx_mutations_input_directory
 
-The directory produced by FoldX and required by the pipeline must follow this structure:
+The directory produced by MutateX and required by the pipeline must follow this structure:
 (Example rooted at /data/raw_data/computational_data/mutatex_data/marinara/pole/complexes/DNA/9B8T_24-1198_retromut_pdbs/mutations/)
 
 9B8T_Q07864_24-1198_filtered_model0_checked_Repair/
@@ -142,7 +142,7 @@ The script generates the following output files:
 
 - delta.csv,  per-model Δ values
 - positives.csv, Δ values > 0 only (all others set to NA)
-- delta_mean.csv, mean and standard deviation for WT and mutant groups, plus the mean delta
+- delta_mean.csv, mean and standard deviation of the paired mutant–wild-type energy differences for each energetic contribution.
 - statistics.csv, summary of structural statistics
 - positive_mean.csv,  mean Δ > 0 (generated when --enable-positive-mean is enabled)
 
@@ -169,37 +169,30 @@ a CSV file where each row corresponds to a mutation, and columns follow the Fold
 
 For each mutation, the script requires a CSV file where each row corresponds to a mutation, and columns follow the FoldX naming convention:
 
-**Feature**, difference between Feature_mean_wt and Feature_mean_mut
+**Feature_mean**, mean of the per-model differences (mutant − wild type) for that contribution
 
-**Feature_mean_wt**, mean value for the wild-type
-
-**Feature_mean_mut** mean value for the mutant
-
-**Feature_std**, propagated standard deviation from Feature_wt_std and Feature_mut_std
-
-**Feature_wt_std**, standard deviation of the wild-type
-
-**Feature_mut_std**, standard deviation of the mutant
+**Feature_std**, standard deviation of the per-model differences
 
 **Position**, residue position
 
+**Model**, index of the model under investigation
+
 **Mutation**, mutation identifier
+
+Each per-model difference is computed as the mutant value minus the corresponding wild-type value, and the mean and standard deviation are then calculated across the paired models.
 
 example of input file:
 
-|Position|Mutation|Interaction_Energy|Interaction_Energy_wt|Interaction_Energy_wt|Interaction_Energy_wt_std|Interaction_Energy_mut_std|...|
-|--------|--------|------------------|---------------------|---------------------|-------------------------|--------------------------|---|
-|702	   |S       |	1.23	           |       -3.23         |   4.0               | 0.04	                   | 0.05                     |...|
+|Position|Mutation|Interaction_Energy_mean|Interaction_Energy_std|...|
+|--------|--------|-----------------------|----------------------|---|
+|702	   |S       |	1.23	                |       0.04           |...|              
 
 
-The script extracts all relevant FoldX energy components.
-It computes propagated errors from the WT and mutant standard deviations. Specifically, the standard deviation associated with the difference between WT_mean and Mutant_mean is calculated by propagating the WT and mutant errors using the formula:
+The script extracts all relevant FoldX energy components. For each energetic contribution, it calculates the difference between the mutant and the corresponding wild-type value for each model pair. The mean and standard deviation of these differences are then computed across the models. Only contributions with non-zero mean differences are included in the plots.
 
-$\sigma_X = \sqrt{\sigma_{\text{WT}}^2 + \sigma_{\text{MUT}}^2}$ 
+Each contribution is visualized as a bar with an error bar representing the standard deviation of the per-model differences. The Interaction_Energy bar, representing the sum of all contributions, is placed as the first bar in the plot.
 
-Each component with a non-zero value is visualized as a bar with an error bar. The Interaction_Energy bar, representing the sum of all energy contributions, is placed as the first bar in the plot.
-
-The script exports one .png file per mutation.
+The script exports one .png file per mutation, showing all relevant energy contributions with propagated uncertainties.
 
 ## Output
 
@@ -234,26 +227,20 @@ N.B In the Model column, the index refers to the model number as the second digi
 #### delta_mean.csv
 This file collects, for each energetic contribution, the mean value across the five models for both mutant and WT, as well as the difference between these two means. It also reports the standard deviation of the WT and mutant values (calculated across the five models). The file has the following structure:
 
-**Position**, residue position mutated in the protein
+**Feature_mean**, mean of the per-model differences (mutant − wild type) for that contribution
 
-**Mutation**, mutation under investigation
+**Feature_std**, standard deviation of the per-model differences
+
+**Position**, residue position
 
 **Model**, index of the model under investigation
 
-**Feature_wt_mean**, mean value of the energetic contribution for the WT across the five models
-
-**Feature_mut_mean**, mean value of the energetic contribution for the mutant across the five models
-
-**Feature_wt_std**, standard deviation of the WT value across the five models
-
-**Feature_mut_std**, standard deviation of the mutant value across the five models
-
-**Feature**, difference between the mutant and WT mean values for that energetic contribution
+**Mutation**, mutation identifier
 
 
-|Position|Mutation|Backbone_Hbond_wt_mean|Backbone_Hbond_wt_std|Backbone_Hbond_mut_mean|Backbone_Hbond_mut_std|Backbone_Hbond|…|
-|--------|--------|----------------------|---------------------|-----------------------|----------------------|--------------|--|
-|GA702|S|-11.8202|0.0|-11.87902|0.0014855975228842203|-0.05882000000000076|…|
+|Position|Mutation|Backbone_Hbond_mean|Backbone_Hbond_std|...|
+|--------|--------|-------------------|------------------|---|
+|GA702   |S       |-11.8202           |0.0               |...|
 
 
 
@@ -266,39 +253,22 @@ This file is a filtered version of delta_mean.csv, containing only positive cont
 #### statistics.csv
 This file contains fields not directly linked to energetic contributions. It includes:
 
-**Number_of_Residues_wt_mean**, number of residues in the WT
+**Number_of_Residues_mean**, mean of the per-model differences between the number of residues in the mutant and wild-type structures; the standard deviation reflects the variability across model pairs.
 
-**Number_of_Residues_mut_mean**, number of residues in the mutant
+**Interface_Residues_mean**, mean of the per-model differences between mutant and wild-type interface residues; the standard deviation is calculated across the five model pairs.
 
-**Number_of_Residues**, difference between Number_of_Residues_mut_mean and Number_of_Residues_wt_mean
+**Interface_Residues_Clashing_mean**, mean of the per-model differences in the number of clashing interface residues between mutant and wild-type; standard deviation reflects variability across models.
 
-**Interface_Residues_wt_mean**, number of residues at interfaces in the WT model
+**Interface_Residues_VdW_Clashing_mean**, mean of the per-model differences in van der Waals clashes at interface residues between mutant and wild-type; standard deviation across models.
 
-**Interface_Residues_mut_mean**, number of residues at interfaces in the mutant model
+**Interface_Residues_BB_Clashing_mean**, mean of the per-model differences in backbone clashes at interface residues between mutant and wild-type; standard deviation across the five model pairs.
 
-**Interface_Residues**, difference between mutant and WT interface residues
-
-**Interface_Residues_Clashing_wt_mean**, number of interface residues clashing in the WT
-
-**Interface_Residues_Clashing_mut_mean**, number of interface residues clashing in the mutant
-
-**Interface_Residues_Clashing**, difference between mutant and WT clashing residues
-
-**Interface_Residues_VdW_Clashing_wt_mean**, number of interface residues with VdW clashes in the WT
-
-**Interface_Residues_VdW_Clashing_mut_mean**, number of interface residues with VdW clashes in the mutant
-
-**Interface_Residues_VdW_Clashing**, difference between mutant and WT VdW clashing residues
-
-**Interface_Residues_BB_Clashing_wt_mean**, number of interface residues with backbone clashes in the WT
-
-**Interface_Residues_BB_Clashing_mut_mean**, number of interface residues with backbone clashes in the mutant
 
 An example of statistics.csv
 
-|Number_of_Residues_wt_mean|Number_of_Residues_mut_mean|Number_of_Residues|Interface_Residues_wt_mean|Interface_Residues_mut_mean|Interface_Residues|Interface_Residues_Clashing_wt_mean|Interface_Residues_Clashing_mut_mean|Interface_Residues_Clashing|Interface_Residues_VdW_Clashing_wt_mean|Interface_Residues_VdW_Clashing_mut_mean|Interface_Residues_VdW_Clashing|Interface_Residues_BB_Clashing_wt_mean|Interface_Residues_BB_Clashing_mut_mean|Interface_Residues_BB_Clashing|
-|--------------------------|---------------------------|------------------|--------------------------|---------------------------|------------------|-----------------------------------|------------------------------------|---------------------------|---------------------------------------|----------------------------------------|-------------------------------|--------------------------------------|---------------------------------------|------------------------------|
-|1080.0|1080.0|0.0|71.0|72.0|1.0|0.0|2.0|2.0|0.0|2.0|2.0|0.0|0.0|0.0|
+|Number_of_Residues_mean|Interface_Residues_mean|Interface_Residues_Clashing_mean|Interface_Residues_VdW_Clashing_mean|Interface_Residues_BB_Clashing_mean|
+|-----------------------|-----------------------|--------------------------------|------------------------------------|-----------------------------------|
+|0.0|1.0|2.0|0.0|0.0|
 
 
 Finally, the folder contains a subfolder called plots, which includes one bar plot per mutation. Each plot shows the difference between the mean WT and mutant values for every energetic contribution that is non-zero.

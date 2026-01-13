@@ -1,3 +1,6 @@
 catalytic_residue,catalytic_residue_pos,catalytic_residue_chain_id,catalytic_residue_atom,second_sphere_residue,second_sphere_pos,second_sphere_residue_atom,second_sphere_residue_chain_id,contact,distance,interacting_entities,type
-GLY,702,A,N,ASN,698,O,A,"vdw_clash, polar",3.04,INTER,atom-atom
-GLY,702,A,C,THR,704,N,A,vdw_clash,3.22,INTER,atom-atom
+THR,1090,A,O,SER,1055,CB,A,"vdw_clash, weak_polar",3.2,INTER,atom-atom
+THR,1090,A,N,PRO,1088,C,A,vdw_clash,3.2,INTER,atom-atom
+THR,1090,A,OG1,LYS,1050,CD,A,"vdw_clash, weak_polar",3.13,INTER,atom-atom
+THR,1090,A,CG2,DA,32,O3*,T,"vdw_clash, weak_polar",3.14,INTER,atom-atom
+THR,1090,A,OG1,DT,33,O1P,T,"vdw_clash, polar",2.5,INTER,atom-atom
