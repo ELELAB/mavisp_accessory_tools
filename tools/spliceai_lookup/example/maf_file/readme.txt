@@ -37,7 +37,6 @@ module load python/3.10/modulefile
 python splice_lookup.py -i spliceai_input_file.csv  -d 500 -t 9
 ```
 
-N.B Be sure that "Mutation" and "HGVSg" columns are contained in the input file.
 
 You can run an example within the example folder
 ```
