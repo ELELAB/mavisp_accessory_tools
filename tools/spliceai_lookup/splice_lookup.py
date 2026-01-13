@@ -22,10 +22,14 @@ def construct_ref_alt(row, fasta, genome_build,maf_cols):
     end = int(row[maf_cols["End_Position"]])
     ref = str(row[maf_cols["wt"]])
     alt = str(row[maf_cols["mutant"]])
-    
-
+    # --- Inversion check ---
+    if alt.upper() == "INV" or alt.upper() == "inversion":
+        ref_seq = fasta[chrom][start-1:end].seq.upper()
+        # reverse complement
+        complement = str.maketrans("ACGT", "TGCA")
+        alt_seq = ref_seq[::-1].translate(complement)
     # Handle different variant types
-    if ref == "-" and alt != "-":  # insertion
+    elif ref == "-" and alt != "-":  # insertion
         # anchor = previous base
         anchor = fasta[chrom][start-1].seq.upper()
         ref_seq = anchor
@@ -117,7 +121,17 @@ def parse_hgvs_for_api(genomic_coordinate, fasta_19, fasta_38):
         ref = anchor + ref
         alt = anchor
         return chro, str(int(start)-1), ref, alt
-
+    
+    # --- INVERSION ---
+    elif "inv" in g_notation:
+        m = re.match(r"(\d+)_(\d+)inv", g_notation)
+        if not m:
+            raise ValueError(f"Unrecognized inversion format: {g_notation}")
+        start, end = m.groups()
+        ref_seq = fasta[fasta_chro][int(start)-1:int(end)].seq.upper()
+        alt_seq = ref_seq[::-1]  # inverti la sequenza come rappresentazione semplice
+        return chro, start, ref_seq, alt_seq
+        
     else:
         raise ValueError(f"Unrecognized HGVSg format: {g_notation}")
 
