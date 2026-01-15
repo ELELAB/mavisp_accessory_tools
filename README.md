@@ -26,6 +26,7 @@ This repository provides accessory tools associated with papers and activities o
 - **RaSP_ensemble_mode**: Contains a script for cleanup and RaSP analysis for multiple frames from ensemble mode, as well as preparatory scripts for inputs such as multiple separate PDBs from clustering or one PDB with concatenated 25 frames. To use for stability analysis in ensemble mode.  
 - **ss_bonds**: This module assesses how cysteine-altering variants may disrupt native disulfide bonds or enable new ones by analyzing structural geometry, rotamer accessibility, and ensembles of FoldX-generated models. Developed for a study currently in progress:  
   *“Decoding ATG9A Variation: A Comprehensive Structural Investigation of All Missense Variants”*  
+- **ThermoMPNN_trainingdata_overlap**: Contains a python script to find matching proteins in a MAVISp dataset and the training datasets of ThermoMPNN (see paper: https://doi.org/10.1073/pnas.2314853121) with the purpose of defining a benchmarking dataset for the ThermoMPNN tool integrated into MAVISp. The directory also includes scripts for data cleanup steps that do **not** have to be rerun before using the comparison script.
   
 ## Citations  
 
