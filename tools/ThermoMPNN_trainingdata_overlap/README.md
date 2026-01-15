@@ -2,7 +2,7 @@
 
 This script identifies proteins that **overlap** between the ThermoMPNN training dataset and a **MAVISp `index.csv`**, as well as proteins that are **not present in the ThermoMPNN training data**. The resulting non-overlapping proteins can be used as a benchmarking set.
 
-As a preliminary step, the ThermoMPNN training datasets were cleaned and annotated with UniProt accession numbers, as described in the `cleanup_trainingdata` directory. The combined FireProt and Mega dataset generated there is used as the training reference in this comparison.
+As a preliminary step, the ThermoMPNN training datasets were cleaned and annotated with UniProt accession numbers, as described in the `cleanup_trainingdata` directory. These steps do **not** have to be rerun. The csv files generated in `cleanup_trainingdata` (`mega_cleaned_training.csv`, `fireprot_cleaned_training.csv`, `combined_mega_fireprot.csv` can be used as a training reference in `compare_ThermoMPNN_trainingdata.py`.
 
 
 ### To run:
