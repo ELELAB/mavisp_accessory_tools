@@ -108,6 +108,8 @@ def main():
     parser.add_argument("-n", "--chain", help="Chain ID to analyze in PDB file")
     parser.add_argument("-d", "--distance", type=float, default=4.5, help="Distance cutoff for contacts in Angstroms (default: 4.5)")
     parser.add_argument("-l", "--ions", help="File with list of ion names (one per line)", default=None)
+    parser.add_argument("--protein-col", default="Protein", help="Column name for protein names in input CSV (default: Protein)")
+    parser.add_argument("--uniprot-col", default="Uniprot AC", help="Column name for UniProt IDs in input CSV (default: Uniprot AC)")
 
     args = parser.parse_args()
 
@@ -218,7 +220,19 @@ def main():
                 'biological_label': ligand_type
             })
 
-    upids =[args.u] if args.u else pd.read_csv(args.i)['Uniprot AC'].dropna().astype(str).tolist()
+    if args.u:
+         protein_data = [{args.protein_col: args.u, args.uniprot_col: args.u}]
+    else:
+        df_input = pd.read_csv(args.i)
+        if args.protein_col not in df_input.columns:
+            print(f"ERROR: Column '{args.protein_col}' not found...")
+            sys.exit(1)
+        if args.uniprot_col not in df_input.columns:
+            print(f"ERROR: Column '{args.uniprot_col}' not found...")
+            sys.exit(1)
+
+        protein_data = df_input[[args.protein_col, args.uniprot_col]].dropna().to_dict('records')
+
     filter_set = load_filter_file(args.filter) if args.filter else None
     out_all = f"{args.output}.csv"
     out_filtered = f"{args.output}_filtered.csv" if filter_set else None
@@ -227,8 +241,12 @@ def main():
     all_rows = []
     filtered_rows = []
     unique_heteroatoms = set()
+    proteins_without_cofactors = []
 
-    for upid in upids:
+    for entry in protein_data:
+        protein_name = entry[args.protein_col]
+        upid = str(entry[args.uniprot_col])
+
         try:
             status, cofactors = fetch_cofactors(upid)
         except (requests.RequestException, ValueError) as e:
@@ -239,25 +257,28 @@ def main():
             continue
 
         if status == "none":
-            all_rows.append([upid, "None"])
+            proteins_without_cofactors.append(protein_name)
+            all_rows.append([protein_name, upid, "None"])
             if filter_set:
-                filtered_rows.append([upid, "None"])
+                filtered_rows.append([protein_name, upid, "None"])
             continue
 
         cof_str = ' '.join(cofactors)
-        all_rows.append([upid, cof_str])
+        all_rows.append([protein_name, upid, cof_str])
         unique_heteroatoms.update(cofactors)
 
         if filter_set:
             matched = [c for c in cofactors if c in filter_set]
-            filtered_rows.append([upid, ' '.join(matched) if matched else "None"])
+            filtered_rows.append([protein_name, upid, ' '.join(matched) if matched else "None"])
+            if not matched:
+                proteins_without_cofactors.append(protein_name)
 
     # Write output files
-    df_all = pd.DataFrame(all_rows, columns=["protein", "heteroatoms"])
+    df_all = pd.DataFrame(all_rows, columns=["protein_name", "uniprot_id", "heteroatoms"])
     df_all.to_csv(out_all, index=False)
 
     if filter_set:
-        df_filtered = pd.DataFrame(filtered_rows, columns=["protein", "cofactors"])
+        df_filtered = pd.DataFrame(filtered_rows, columns=["protein_name", "uniprot_id", "cofactors"])
         df_filtered.to_csv(out_filtered, index=False)
 
     with open(out_unique, "w") as f:
@@ -271,6 +292,17 @@ def main():
 
         print(f"Ligand analysis complete: {len(pdb_results)} ligands found")
         print(f"Results saved to: {ligand_output}")
+
+    print("\n" + "="*60)
+    if proteins_without_cofactors:
+        print(f"Proteins without cofactors: {len(proteins_without_cofactors)}")
+        print("-"*60)
+        print(", ".join(proteins_without_cofactors))
+        print("-"*60)
+        print("\nThese proteins can be used to run MAVISp.")
+    else:
+        print("All proteins have cofactors.")
+    print("="*60)
 
 if __name__ == "__main__":
     main()
