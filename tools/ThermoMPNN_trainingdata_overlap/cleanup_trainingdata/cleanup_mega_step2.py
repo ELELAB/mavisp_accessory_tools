@@ -20,6 +20,7 @@ import pandas as pd
 from Bio.Blast import NCBIWWW, NCBIXML
 import time
 import argparse
+import sys
 
 INPUT_FILE = "mega_cleaned_full.csv"
 OUTPUT_FILE = "mega_cleaned_full_with_blast.csv"
