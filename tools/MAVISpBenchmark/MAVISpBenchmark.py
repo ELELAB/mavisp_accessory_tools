@@ -166,6 +166,13 @@ def metrics(array,
     else:
         mcc = "nan"
 
+    N_ref = GLOBAL_DATASET_SIZE  
+
+    if mcc != "nan" and dataset_size > 0 and N_ref > 0:
+        mcc_norm = round(mcc * np.sqrt(dataset_size / N_ref), 3)
+    else:
+        mcc_norm = "nan"
+
     # Collect metrics
     metric = {
         "sensitivity": sensitivity,
@@ -174,8 +181,10 @@ def metrics(array,
         "precision": precision,
         "F1 score": F1_score,
         "MCC": mcc,
+        "MCC_norm": mcc_norm,
         "dataset_size": dataset_size
     }
+
 
     # Save to CSV
     protein_performance_metric = pd.DataFrame([metric])
@@ -326,6 +335,10 @@ def plot_accessibility_kde(df,
     output_path : str
         Base path for saving the figure (PDF and PNG).
     """
+    if "divergent" in output_path:
+        output_file_name = "divergent_classification_accessibility"
+    else:
+        output_file_name = "concordant_classification_accessibility"
     plt.figure(figsize=(12,6))
     sn.kdeplot(df[col_name], fill=True, color="blue", alpha=0.5)
     plt.axvline(threshold, color="red", linestyle="--", label=f"Threshold = {threshold}")
@@ -334,8 +347,8 @@ def plot_accessibility_kde(df,
     plt.title("Distribution of Side Chain Solvent Accessibility")
     plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     plt.tight_layout()
-    plt.savefig(f"{output_path}/divergent_classification_accessibility.png", dpi=300)
-    plt.savefig(f"{output_path}/divergent_classification_accessibility.pdf")
+    plt.savefig(f"{output_path}/{output_file_name}.png", dpi=300)
+    plt.savefig(f"{output_path}/{output_file_name}.pdf")
     plt.close()
 
 
@@ -441,6 +454,12 @@ def plot_distribution_with_highlighted_mutations(df, data_column, mavisp_classif
     mutations_list: list of str
         A list of mutations (strings) to be highlighted in the plot.
     '''
+    # Convert to numeric if possible
+    numeric_data = pd.to_numeric(df[data_column], errors="coerce")
+
+    if numeric_data.isna().all():
+        print(f"Skipping KDE plot for {data_column}: categorical data")
+        return
     fig, ax = plt.subplots(figsize=(12, 6))
     # Create the distribution plot for all data
     sn.kdeplot(df[data_column],fill = True)
@@ -515,18 +534,19 @@ def performance_histogram_plot(df, output_path, color_palette):
     output_path (str): The path where the plot should be saved.
     """
 
+    plot_df = df.drop(columns=["dataset_size"], errors="ignore").copy()
     # Step 1: Ensure 'method' is the first column (reorder columns)
-    columns_order = ['method'] + [col for col in df.columns if col != 'method']
-    df = df[columns_order]
+    columns_order = ['method'] + [col for col in plot_df.columns if col != 'method']
+    plot_df = plot_df[columns_order]
 
     # Step 2: Ensure all metric columns are of float type
-    for col in df.columns[1:]:
-        df[col] = df[col].astype(float)
+    for col in plot_df.columns[1:]:
+        plot_df[col] = plot_df[col].astype(float)
 
     # Step 3: Define metrics and number of methods
-    metrics = df.columns[1:]
+    metrics = plot_df.columns[1:]
     num_metrics = len(metrics)
-    num_methods = len(df['method'].unique())
+    num_methods = len(plot_df['method'].unique())
 
     # Step 4: Create a color palette using seaborn
     palette = sn.color_palette(color_palette, num_methods)  # 'Set2' palette, can be changed
@@ -540,10 +560,10 @@ def performance_histogram_plot(df, output_path, color_palette):
     indices = np.arange(num_metrics)  # Positions for each metric
 
     # Step 7: Plot the bars for each method side by side within each metric group
-    for i, method in enumerate(df['method']):
+    for i, method in enumerate(plot_df['method']):
         # Offset the positions of the bars for each method
         offset = i * bar_width
-        ax.bar(indices + offset, df.iloc[i, 1:], width=bar_width, label=method, color=color_map[method], alpha=0.7)
+        ax.bar(indices + offset, plot_df.iloc[i, 1:], width=bar_width, label=method, color=color_map[method], alpha=0.7)
 
     # Step 8: Set the x-axis labels and ticks
     ax.set_xticks(indices + bar_width * (num_methods - 1) / 2)
@@ -823,12 +843,12 @@ def validate_yaml(config, input_flags):
                     raise ValueError(f"Threshold in {comp['name']} weighted logic must be between 0 and 1.")
 
                 # Check somma pesi = 1 (entro tolleranza numerica)
-                weight_sum = sum(weighted["weights"].values())
-                if abs(weight_sum - 1.0) > 1e-6:
-                    raise ValueError(
-                        f"In '{comp['name']}' weighted logic, the sum of weights must be 1. "
-                        f"Currently: {weight_sum}"
-                    )
+               # weight_sum = sum(weighted["weights"].values())
+                #if abs(weight_sum - 1.0) > 1e-6:
+                    #raise ValueError(
+                       # f"In '{comp['name']}' weighted logic, the sum of weights must be 1. "
+                       # f"Currently: {weight_sum}"
+                    #)
 # ---------------------------
 # CSV columns validation
 # ---------------------------
@@ -1122,21 +1142,73 @@ def run_full_analysis(df_confusion_matrix, config, args, selected_mode,remove_po
                                                         experimental_thresholds = experimental_thresholds)
             divergent_classification_neutral = divergent_classification.loc[divergent_classification[comp_col] == "Neutral"]
             divergent_classification_damging = divergent_classification.loc[divergent_classification[comp_col] == "Damaging"]
-            for discordant_classification_df,output in zip([divergent_classification_neutral,divergent_classification_damging],
-                                                           [divergent_classification_neutral_path,divergent_classification_damaging_path]):
-                if selected_mode == "simple":
-                    accessibility_column = "Relative Side Chain Solvent Accessibility in wild-type"
-                else:
-                    accessibility_column = "Relative Side Chain Solvent Accessibility in wild-type (average) [md]"
-                plot_accessibility_kde(discordant_classification_df,
-                                       accessibility_column,
-                                       20,
-                                       output)
-                plot_residue_mutation_distribution(discordant_classification_df,"Mut_res","wt_res_position",output)
-                discordant_type = output.split("_")[-1]
-                discordant_classification_df.to_csv(f"{output}/discordant_classification_{discordant_type}.csv",index=False)
-            
-        
+            # =============================
+            # Concordant classification
+            # =============================
+            concordant_classification = df_confusion_matrix_plot.loc[
+                df_confusion_matrix_plot[comp_col] ==
+                df_confusion_matrix_plot[experiment_column_classification]
+            ].copy()
+
+            concordant_path = f"{cm_path}/concordant_classification_analysis"
+            neutral_conc_path = f"{concordant_path}/concordant_neutral"
+            damaging_conc_path = f"{concordant_path}/concordant_damaging"
+
+            os.makedirs(neutral_conc_path, exist_ok=True)
+            os.makedirs(damaging_conc_path, exist_ok=True)
+
+            concordant_classification.to_csv(
+                f"{concordant_path}/concordant_classification.csv", index=False
+            )
+
+            concordant_neutral = concordant_classification.loc[
+                concordant_classification[comp_col] == "Neutral"
+            ]
+
+            concordant_damaging = concordant_classification.loc[
+                concordant_classification[comp_col] == "Damaging"
+            ]
+            # =============================
+            # Plot settings
+            # =============================
+            if selected_mode == "simple":
+                accessibility_column = "Relative Side Chain Solvent Accessibility in wild-type"
+            else:
+                accessibility_column = "Relative Side Chain Solvent Accessibility in wild-type (average) [md]"
+            # =============================
+            # Plot ALL groups
+            # =============================
+            plot_groups = [
+                (divergent_classification_neutral, divergent_classification_neutral_path, "discordant_neutral"),
+                (divergent_classification_damging, divergent_classification_damaging_path, "discordant_damaging"),
+                (concordant_neutral, neutral_conc_path, "concordant_neutral"),
+                (concordant_damaging, damaging_conc_path, "concordant_damaging"),
+            ]
+
+            for df_group, output_path, label in plot_groups:
+
+                if df_group.empty:
+                    print(f"⚠️ Skipping {label}: no data")
+                    continue
+
+                plot_accessibility_kde(
+                    df_group,
+                    accessibility_column,
+                    20,
+                    output_path
+                )
+
+                plot_residue_mutation_distribution(
+                    df_group,
+                    "Mut_res",
+                    "wt_res_position",
+                    output_path
+                )
+
+                df_group.to_csv(
+                    f"{output_path}/{label}.csv",
+                    index=False
+                )
             # save in csv format the data used for the confusion matrix
             df_confusion_matrix_data = df_confusion_matrix_plot[["Mutation",comp_col,experiment_column,experiment_column_classification]]
             df_confusion_matrix_data.to_csv(f"{cm_path}/confusion_matrix_data.csv",sep=",",index=False)
@@ -1160,6 +1232,7 @@ def run_full_analysis(df_confusion_matrix, config, args, selected_mode,remove_po
 
 
 def main():
+    global GLOBAL_DATASET_SIZE
     prot_pos_to_remove = []
     if args.residues_to_exclude:
         position_to_remove = pd.read_csv(args.residues_to_exclude)
@@ -1219,6 +1292,14 @@ def main():
 
         # ---------------------- process input file --------------------------- #
         df_merged = process_input_files(config,mode)
+        exp_col_class = config["experimental_column_classification"]
+        df_filtered = df_merged.dropna(subset=[exp_col_class])
+        df_filtered = df_filtered[df_filtered[exp_col_class].isin(['Damaging','Neutral'])]
+
+        # -----------------------
+        # Set global dataset size here
+        # -----------------------
+        GLOBAL_DATASET_SIZE = len(df_filtered)
         # ------------------------ plots the result --------------------------- #
         run_full_analysis(df_merged,config,args,mode,prot_pos_to_remove,mutations_to_be_excluded)
 
