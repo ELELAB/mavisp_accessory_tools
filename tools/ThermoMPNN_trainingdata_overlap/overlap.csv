@@ -1,0 +1,11 @@
+Protein,Uniprot AC,RefSeq ID,Review status,Curators,GitBook report,Distance cut-off used for AlloSigma2,Contact calculation mode for AlloSigma2 filtering,Structure source,Description of structure source,Linker design included,PDB ID,Cofactors in starting structure
+BTK,Q06187,NP_000052,1,"Karolina Krzesińska (DCI, Denmark, DTU, Denmark)",https://elelab.gitbook.io/mavisp/proteins/btk,5.5,atomic_contacts,AFDB,AlphaFold database,False,,
+SRC,P12931,NP_005408,0,"Elena Papaleo (DCI, Denmark, DTU, Denmark)",,5.5,atomic_contacts,AFDB,AlphaFold database,False,,
+LCK,P06239,NP_005347,2,"Burcu Aykac-Fas (LBT-IBPC, Paris, France)",https://elelab.gitbook.io/mavisp/proteins/lck/,5.5,atomic_contacts,AFDB,AlphaFold database,False,,
+FN1,P02751,NP_997647,0,"Karolina Krzesińska (DCI, Denmark, DTU, Denmark)",,5.5,atomic_contacts,AFDB,AlphaFold database,False,,
+TP53,P04637,NP_000537,3,"Kristine Degn (DTU, Denmark), Elena Papaleo (DCI, Denmark, DTU, Denmark)",https://elelab.gitbook.io/mavisp/proteins/tp53/,5.5,atomic_contacts,AFDB,AlphaFold database,False,,
+CPA2,P48052,NP_001860,0,"Kristine Degn (DTU, Denmark)",,5.5,atomic_contacts,AFDB,AlphaFold database,False,,
+SERPINA1,P01009,NP_000286,0,"Eleni Kiachaki (DTU, Denmark, DCI, Denmark)",,5.5,atomic_contacts,AFDB,AlphaFold database,False,,
+LYN,P07948,NP_002341,2,"Burcu Aykac-Fas (LBT-IBPC, Paris, France)",https://elelab.gitbook.io/mavisp/proteins/lyn/,5.5,atomic_contacts,AFDB,AlphaFold database,False,,
+DUXA4,Q9UBX2,NP_001280727,0,"Kristine Degn (DCI, Denmark, DTU, Denmark)",,5.5,atomic_contacts,AFDB,AlphaFold database,False,,
+CDKN2A,P42771,NP_000068,0,"Elena Papaleo (DCI, Denmark, DTU, Denmark)",,,,AFDB,AlphaFold database,False,,
