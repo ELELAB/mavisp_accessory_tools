@@ -108,9 +108,9 @@ def main():
     parser.add_argument("-n", "--chain", help="Chain ID to analyze in PDB file")
     parser.add_argument("-d", "--distance", type=float, default=4.5, help="Distance cutoff for contacts in Angstroms (default: 4.5)")
     parser.add_argument("-l", "--ions", help="File with list of ion names (one per line)", default=None)
-    parser.add_argument("--protein-col", default="Protein", help="Column name for protein names in input CSV (default: Protein)")
-    parser.add_argument("--uniprot-col", default="Uniprot AC", help="Column name for UniProt IDs in input CSV (default: Uniprot AC)")
-
+    parser.add_argument("-r", "--protein-col", default="Protein", help="Column name for protein names in input CSV (default: Protein)")
+    parser.add_argument("-t", "--uniprot-col", default="Uniprot AC", help="Column name for UniProt IDs in input CSV (default: Uniprot AC)")
+    parser.add_argument("-a", "--protein-name", help="Protein name ( used with -u)")
     args = parser.parse_args()
 
     cofactor_list = set()
@@ -221,6 +221,7 @@ def main():
             })
 
     if args.u:
+         prot_name = args.protein_name if args.protein_name else args.u
          protein_data = [{args.protein_col: args.u, args.uniprot_col: args.u}]
     else:
         df_input = pd.read_csv(args.i)
@@ -295,11 +296,7 @@ def main():
 
     print("\n" + "="*60)
     if proteins_without_cofactors:
-        print(f"Proteins without cofactors: {len(proteins_without_cofactors)}")
-        print("-"*60)
-        print(", ".join(proteins_without_cofactors))
-        print("-"*60)
-        print("\nThese proteins can be used to run MAVISp.")
+        print(",".join(proteins_without_cofactors))
     else:
         print("All proteins have cofactors.")
     print("="*60)
