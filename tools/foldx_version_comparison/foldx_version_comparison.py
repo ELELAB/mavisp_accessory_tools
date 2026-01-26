@@ -259,26 +259,6 @@ class FoldXVersionComparison:
         metrics['cohen_kappa'] = self._cohen_kappa(y_true, y_pred)
 
         labels = ['Stabilizing', 'Neutral', 'Destabilizing']
-        cm = self._confusion_matrix(y_true, y_pred, labels)
-
-
-        for i, label in enumerate(labels):
-            label_lower = label.lower()
-
-            # True positives, false positives, false negatives
-            tp = cm[i, i]
-            fp = cm[:, i].sum() - tp
-            fn = cm[i, :].sum() - tp
-
-
-            precision = tp / (tp + fp) if (tp + fp) > 0 else 0
-            recall = tp / (tp + fn) if (tp + fn) > 0 else 0
-            f1 = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
-
-            metrics[f'{label_lower}_precision'] = precision
-            metrics[f'{label_lower}_recall'] = recall
-            metrics[f'{label_lower}_f1'] = f1
-
 
         for label in labels:
             label_lower = label.lower()
