@@ -315,42 +315,17 @@ Here an example of entry_not_found.csv file:
 
 ### API activation
 
-Activate the local API.
-
-In order to open the local API open a new terminal and run the following commands:
-```
-source /data/user/marnaudi/spliceai_lookup/spliceai-env/bin/activate
-conda activate /home/marnaudi/.conda/envs/bioenv/
-```
-run the following command to check if there are some running process:
-
-```
-lsof -i :8080 
-``` 
-you need to kill all the processes with your name in the port 8080
-
-To kill them, check the PID code and run the following command for each process to kill
-```
-kill -9 PID
-```
-Check that no process is active with
-```
-lsof -i :8080
-```
-Activate the local API server with
-```
-cd /data/user/marnaudi/spliceai_lookup/SpliceAI-lookup/
-bash start_local_server.sh 
+######Placeholder################ activation of dockers
 
 ```
 ### splice_lookup.py 
 In a new terminal in the folder with the input files, config file and the script:
 
 ```
-source /data/user/marnaudi/spliceai_lookup/spliceai-env/bin/activate
-conda activate /home/marnaudi/.conda/envs/bioenv/
-python splice_lookup.py -i mavisp_input.csv -g /data/databases/genome_annotation/ -d 500 -t 9 -m 
-python splice_lookup.py -i maf_input.csv -g /data/databases/genome_annotation/ -d 500 -t 9 -f -c config_maf.yaml
+#######Placeholder############## activation of environment
+
+python splice_lookup -i mavisp_input.csv -g /data/databases/genome_annotation/ -d 500 -t 9 -m 
+python splice_lookup -i maf_input.csv -g /data/databases/genome_annotation/ -d 500 -t 9 -f -c config_maf.yaml
 ```
 
 N.B Be sure that the required columns are contained in the input file
