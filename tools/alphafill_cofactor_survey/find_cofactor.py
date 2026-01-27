@@ -294,12 +294,10 @@ def main():
         print(f"Ligand analysis complete: {len(pdb_results)} ligands found")
         print(f"Results saved to: {ligand_output}")
 
-    print("\n" + "="*60)
     if proteins_without_cofactors:
-        print(",".join(proteins_without_cofactors))
+        print("Proteins without cofactors: " + ",".join(proteins_without_cofactors))
     else:
-        print("All proteins have cofactors.")
-    print("="*60)
+        print("All proteins have cofactors")
 
 if __name__ == "__main__":
     main()
