@@ -222,7 +222,7 @@ def main():
 
     if args.u:
          prot_name = args.protein_name if args.protein_name else args.u
-         protein_data = [{args.protein_col: args.u, args.uniprot_col: args.u}]
+         protein_data = [{args.protein_col: prot_name, args.uniprot_col: args.u}]
     else:
         df_input = pd.read_csv(args.i)
         if args.protein_col not in df_input.columns:
