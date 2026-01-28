@@ -1,0 +1,4 @@
+Mutation,HGVSg,note
+Q949W,"hg19,5:g.80149980_80149981inv",Pangolin does not currently support complex InDels like 5-80149980-CA-AC
+Q949W,"hg38,5:g.80854161_80854162inv",Pangolin does not currently support complex InDels like 5-80854161-CA-AC
+P346L,"hg19,5:g.79970811_79970812delinsTT",Pangolin does not currently support complex InDels like 5-79970811-CC-TT

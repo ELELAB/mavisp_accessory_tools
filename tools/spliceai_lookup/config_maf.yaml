@@ -1,0 +1,9 @@
+maf_file_columns: 
+    NCBI_Build: "NCBI_Build" 
+    Chromosome: "Chromosome" 
+    Start_Position: "Start_Position" 
+    End_Position: "End_Position" 
+    wt: "Reference_Allele" 
+    mutant: "Tumor_Seq_Allele2" 
+    Transcript_ID: "Transcript_ID"
+    HGVSp_Short: "HGVSp_Short"
