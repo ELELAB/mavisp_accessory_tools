@@ -20,8 +20,20 @@ sys
 mygene
 re
 
-In order to run the Splice_lookup locally install the requirements specified in the README.md
-for the API_local_server installation
+the spliceai_lookup script requires having web API endpoints for SpliceAI and Pangolin
+available on the computer it is ran from, as suggested in the [SpliceAI lookup repository README file](https://github.com/broadinstitute/SpliceAI-lookup/blob/master/README.md)
+
+In particulare we need:
+  - spliceai-38:latest available on host port 8080
+  - pangolin-38:latest available on host port 8081
+  - spliceai-37:latest available on host port 8082
+  - pangolin-37:latest available on host port 8083
+
+we use Docker containers to make the API endpoints available to the script, therefore
+those will need to be running before using the query script (see instructions below).
+
+Notice that the user starting the container must be able to use Docker (and so
+be in the docker user group).
 
 ## Description
 
@@ -313,27 +325,66 @@ Here an example of entry_not_found.csv file:
 
 ## Usage 
 
-### API activation
+### Start Docker containers for SpliceAI and Pangolin API
 
-######Placeholder################ activation of dockers
-
-```
-### splice_lookup.py 
-In a new terminal in the folder with the input files, config file and the script:
+Before being able to run the script, you need to have the Docker containers
+that implement the required web APIs running. This can be performed using the following
+commands:
 
 ```
-#######Placeholder############## activation of environment
+docker run -d -p 8080:8080 weisburd/spliceai-38:latest
+docker run -d -p 8081:8080 weisburd/pangolin-38:latest
+docker run -d -p 8082:8080 weisburd/spliceai-37:latest
+docker run -d -p 8083:8080 weisburd/pangolin-37:latest
+```
+you should just receive one hash string per command as terminal output.
 
-python splice_lookup -i mavisp_input.csv -g /data/databases/genome_annotation/ -d 500 -t 9 -m 
-python splice_lookup -i maf_input.csv -g /data/databases/genome_annotation/ -d 500 -t 9 -f -c config_maf.yaml
+if that is not the case and you receive errors similar to
+
+```
+docker: Error response from daemon: failed to set up container networking: driver failed programming external connectivity on endpoint romantic_meninsky (8f598755fea9cbee49c3003ee97bca9940472c519e511121e74a2b8f0f386095): Bind for 0.0.0.0:8080 failed: port is already allocated
+```
+
+it likely means that the necessary containers are already active. If so,
+please check if that is the case by running `docker container list`,
+you should receive an output similar to:
+
+```
+docker container list
+CONTAINER ID   IMAGE                         COMMAND                  CREATED              STATUS              PORTS                                         NAMES
+ddf4c5555c71   weisburd/pangolin-37:latest   "/bin/sh -c 'exec gu…"   About a minute ago   Up About a minute   0.0.0.0:8083->8080/tcp, [::]:8083->8080/tcp   peaceful_bassi
+fc1f261e5119   weisburd/spliceai-37:latest   "/bin/sh -c 'exec gu…"   About a minute ago   Up About a minute   0.0.0.0:8082->8080/tcp, [::]:8082->8080/tcp   upbeat_lovelace
+66ab625329ad   weisburd/pangolin-38:latest   "/bin/sh -c 'exec gu…"   About a minute ago   Up About a minute   0.0.0.0:8081->8080/tcp, [::]:8081->8080/tcp   heuristic_knuth
+317c601b8102   weisburd/spliceai-38:latest   "/bin/sh -c 'exec gu…"   About a minute ago   Up About a minute   0.0.0.0:8080->8080/tcp, [::]:8080->8080/tcp   blissful_hermann
+```
+
+in which these four containers have status Up. If this is not the case, please
+do not continue and notify us in the #servers Slack channel.
+
+```
+### splice_lookup
+
+1. activate the Python environment for splice_lookup:
+
+```
+. /usr/local/envs/spliceai/bin/activate
+```
+
+notice that the splice_lookup script is already available in this environment
+
+2. In a new terminal in the folder with the input and config files:
+
+```
+splice_lookup -i mavisp_input.csv -g /data/databases/genome_annotation/ -d 500 -t 9 -m 
+splice_lookup -i maf_input.csv -g /data/databases/genome_annotation/ -d 500 -t 9 -f -c config_maf.yaml
 ```
 
 N.B Be sure that the required columns are contained in the input file
 
 You can try an example located in the example folder, which contains sample runs for both MAF and MAVISP formats.
 Inside maf_file or mavisp file folder:
+
 ```
 bash run.sh
 ```
-
 
