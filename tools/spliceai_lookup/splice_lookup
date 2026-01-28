@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 import pandas as pd
 import requests
 import time
@@ -218,10 +219,16 @@ for mutation, genomic_coordinates in mutations_genomic_coordinates.items():
         distance = args.distance
         time_delay = args.time_delay
 
-        base_urls = [
-            "http://127.0.0.1:8080/spliceai",
-            "http://127.0.0.1:8080/pangolin"
-        ]
+        if hg == '38':
+            base_urls = [
+                "http://127.0.0.1:8080/spliceai",
+                "http://127.0.0.1:8081/pangolin"
+            ]
+        else:
+            base_urls = [
+                "http://127.0.0.1:8082/spliceai",
+                "http://127.0.0.1:8083/pangolin"
+            ]
 
         for base_url in base_urls:
             result = call_api(base_url, hg, distance, chro, coordinate, wt_nt, mut_nt)
