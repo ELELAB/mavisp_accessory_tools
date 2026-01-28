@@ -1,6 +1,6 @@
 # SpliceAI_lookup local API
 
-splice_lookup.py is a python script designed to query the SpliceAI_lookup API (https://spliceailookup.broadinstitute.org) on a local server retriving the predictions about splicing alterations upon mutations (SNV and SV) from SpliceAI and Pangolin tools. 
+splice_lookup is a python script designed to query the SpliceAI_lookup API (https://spliceailookup.broadinstitute.org) on a local server retriving the predictions about splicing alterations upon mutations (SNV and SV) from SpliceAI and Pangolin tools. 
 
 ## Requirements
 
@@ -20,7 +20,7 @@ sys
 mygene
 re
 
-the spliceai_lookup script requires having web API endpoints for SpliceAI and Pangolin
+the splice_lookup script requires having web API endpoints for SpliceAI and Pangolin
 available on the computer it is ran from, as suggested in the [SpliceAI lookup repository README file](https://github.com/broadinstitute/SpliceAI-lookup/blob/master/README.md)
 
 In particulare we need:
@@ -37,7 +37,7 @@ be in the docker user group).
 
 ## Description
 
-splice_lookup.py supports two types of files:
+splice_lookup supports two types of files:
 
 One file (MAVISp format) requires:
 
