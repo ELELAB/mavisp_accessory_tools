@@ -361,7 +361,7 @@ fc1f261e5119   weisburd/spliceai-37:latest   "/bin/sh -c 'exec gu…"   About a 
 in which these four containers have status Up. If this is not the case, please
 do not continue and notify us in the #servers Slack channel.
 
-```
+
 ### splice_lookup
 
 1. activate the Python environment for splice_lookup:
