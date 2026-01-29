@@ -358,8 +358,8 @@ fc1f261e5119   weisburd/spliceai-37:latest   "/bin/sh -c 'exec gu…"   About a 
 317c601b8102   weisburd/spliceai-38:latest   "/bin/sh -c 'exec gu…"   About a minute ago   Up About a minute   0.0.0.0:8080->8080/tcp, [::]:8080->8080/tcp   blissful_hermann
 ```
 
-in which these four containers have status Up. If this is not the case, please
-do not continue and notify us in the #servers Slack channel.
+in which these four containers have status Up. If this is the case you can proceed with running the script.
+If this is not the case, please do not continue and notify us in the #servers Slack channel.
 
 
 ### splice_lookup
@@ -369,17 +369,16 @@ do not continue and notify us in the #servers Slack channel.
 ```
 . /usr/local/envs/spliceai/bin/activate
 ```
-
 notice that the splice_lookup script is already available in this environment
 
-2. In a new terminal in the folder with the input and config files:
+2. In the folder with the input and config files:
 
 ```
 splice_lookup -i mavisp_input.csv -g /data/databases/genome_annotation/ -d 500 -t 9 -m 
 splice_lookup -i maf_input.csv -g /data/databases/genome_annotation/ -d 500 -t 9 -f -c config_maf.yaml
 ```
 
-N.B Be sure that the required columns are contained in the input file
+N.B: Be sure that the required columns are contained in the input file
 
 You can try an example located in the example folder, which contains sample runs for both MAF and MAVISP formats.
 Inside maf_file or mavisp file folder:
