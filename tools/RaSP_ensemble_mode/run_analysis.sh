@@ -1,14 +1,48 @@
 #!/bin/bash
 
 # Check if the correct number of arguments is provided
-if [ "$#" -ne 3 ]; then
-    echo "Usage: $0 <chain_id> <cores> <num_frames>"
+if [ "$#" -lt 3 ] || [ "$#" -gt 5 ]; then
+    echo "Usage: $0 <chain_id> <cores> <num_frames> [cpu|cuda] [gpu_id]"
     exit 1
 fi
 
 CHAIN_ID=$1
 CORES=$2
 NUM_FRAMES=$3
+RUNTYPE=${4:-cpu}
+GPU_ID=${5:-0}
+
+if [[ "$RUNTYPE" != "cpu" && "$RUNTYPE" != "cuda" ]]; then
+    echo "Error: Runtype must be 'cpu' or 'cuda'."
+    exit 1
+fi
+
+if [[ "$RUNTYPE" == "cuda" ]]; then
+    if ! command -v nvidia-smi &> /dev/null; then
+        echo "Error: cuda set as runtype, but nvidia-smi not found."
+        exit 1
+    fi
+fi
+
+if ! [[ "$GPU_ID" =~ ^[0-9]+$ ]]; then
+    echo "Error: GPU_ID must be a non-negative integer."
+    exit 1
+fi
+
+if [[ "$RUNTYPE" == "cuda" ]]; then
+    GPU_COUNT=$(nvidia-smi -L | wc -l)
+
+    if [[ "$GPU_ID" -ge "$GPU_COUNT" ]]; then
+        echo "Error: GPU $GPU_ID does not exist ($GPU_COUNT GPUs found)."
+        exit 1
+    fi
+
+    export CUDA_VISIBLE_DEVICES=$GPU_ID
+
+    echo "Running RaSP on GPU $GPU_ID."
+else
+    echo "Running RaSP on CPU."
+fi
 
 # Load RaSP conda environment
 source /usr/local/miniconda3/etc/profile.d/conda.sh
@@ -99,7 +133,7 @@ for dir in "${directories[@]}"; do
         echo "Processing complete. Output written to $OUTPUT_PDB"
 
         # Run RaSP_workflow command
-        RaSP_workflow -i $OUTPUT_PDB -r cpu -p /usr/local/envs/RaSP_workflow/RaSP_workflow/src/ -o . -n $CORES -c $CHAIN_ID
+        RaSP_workflow -i $OUTPUT_PDB -r "$RUNTYPE" -p /usr/local/envs/RaSP_workflow/RaSP_workflow/src/ -o . -n $CORES -c $CHAIN_ID
 
         # Run RaSP_postprocess command
         RaSP_postprocess -i output/predictions/*
