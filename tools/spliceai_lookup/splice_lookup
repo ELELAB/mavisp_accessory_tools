@@ -164,7 +164,7 @@ if args.mavisp:
     if "Mutation" not in df.columns or "HGVSg" not in df.columns:
         raise ValueError("The CSV file must contain the columns 'Mutation' and 'HGVSg'.")
     # Filter empty lines in HGVSg column
-    print("Filtering mutation wiht no HGVSg annotation")
+    print("####### Filtering mutations with no HGVSg annotation #######")
     initial_lines = len(df)
     df = df[df["HGVSg"].fillna("").str.strip().astype(bool)]
     final_lines = len(df)
