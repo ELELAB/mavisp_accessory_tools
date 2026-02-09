@@ -163,6 +163,15 @@ fasta_19 = Fasta(f"{args.genome_build_path}/hg19.fa")
 if args.mavisp:
     if "Mutation" not in df.columns or "HGVSg" not in df.columns:
         raise ValueError("The CSV file must contain the columns 'Mutation' and 'HGVSg'.")
+    # Filter empty lines in HGVSg column
+    print("Filtering mutation wiht no HGVSg annotation")
+    initial_lines = len(df)
+    df = df[df["HGVSg"].fillna("").str.strip().astype(bool)]
+    final_lines = len(df)
+    if initial_lines != final_lines:
+        print(f"{final_lines} mutations will be analyzed after filtering")
+    else:
+        print("no mutation with no HGVSg annotation detected")
     # Map mutations to genomic coordinates
     mutations_genomic_coordinates = {
             mutation: hgvsg.split(", ") for mutation, hgvsg in zip(df["Mutation"], df["HGVSg"])
