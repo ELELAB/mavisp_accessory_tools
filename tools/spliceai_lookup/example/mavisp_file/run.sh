@@ -3,4 +3,4 @@
 
 . /usr/local/envs/spliceai/bin/activate
 
-../../splice_lookup -i mavisp_input.csv -m -g /data/databases/genome_annotation/ -d 500 -t 9
+../../splice_lookup -i MLH1-ensemble_mode.csv -m -g /data/databases/genome_annotation/ -d 500 -t 9
