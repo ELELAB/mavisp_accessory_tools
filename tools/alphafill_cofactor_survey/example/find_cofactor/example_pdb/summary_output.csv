@@ -1,2 +1,2 @@
-protein,heteroatoms
-P40692,ADP ATP K MG NA ZN
+protein_name,uniprot_id,heteroatoms
+MLH1,P40692,ADP ATP K MG NA ZN
