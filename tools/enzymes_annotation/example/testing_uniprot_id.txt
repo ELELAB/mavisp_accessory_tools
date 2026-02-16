@@ -1,0 +1,5 @@
+O62305_ec_number_annotation.csv  
+Q07864_ec_number_annotation.csv 
+P51955_catalytic_residues.csv   
+Q852N6_ec_number_annotation.csv
+Q07864 
