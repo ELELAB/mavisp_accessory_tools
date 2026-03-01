@@ -1,0 +1,2 @@
+Uniprot_ac;target_gene_name;ec_number;catalytic residues;is_manually_curated;reference_uniprot;reference_enzyme_name;reference_gene_name
+P51955;NEK2;2.7.11.19;Asn146, Lys143, Thr179, Asp141, Asp159;No;P00518;phosphorylase kinase;PHKG1
