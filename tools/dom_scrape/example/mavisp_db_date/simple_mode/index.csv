@@ -1,0 +1,4 @@
+Protein,Uniprot AC,RefSeq ID,Review status,Curators,GitBook report,Distance cut-off used for AlloSigma2
+ACVR1B,P36896,NP_004293,3,"Elena Papaleo (DCI, Denmark, DTU, Denmark)",https://elelab.gitbook.io/mavisp/proteins/acvr-proteins/acvr1b,"14.5, 15"
+ARID1A,O14497,NP_006006,2,"Elena Papaleo (DCI, Denmark, DTU, Denmark)",https://elelab.gitbook.io/mavisp/proteins/arid1a/,15
+ARID3A,Q99856,NP_005215,3,"Elena Papaleo (DCI, Denmark, DTU, Denmark), Karolina Krzesinska (DTU, Denmark, DCI, Denmark)",https://elelab.gitbook.io/mavisp/proteins/arid3a,15.5
