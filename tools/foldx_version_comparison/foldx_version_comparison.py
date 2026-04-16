@@ -273,11 +273,11 @@ class FoldXVersionComparison:
         ax.axvline(x=self.ddg_threshold, color='gray', linestyle=':', alpha=0.5)
         ax.axvline(x=-self.ddg_threshold, color='gray', linestyle=':', alpha=0.5)
 
-        ax.set_xlabel(f'{self.version1_name} ΔΔG (kcal/mol)', fontsize=15)
-        ax.set_ylabel(f'{self.version2_name} ΔΔG (kcal/mol)', fontsize=15)
+        ax.set_xlabel(f'{self.version1_name} ΔΔG (kcal/mol)', fontsize=16)
+        ax.set_ylabel(f'{self.version2_name} ΔΔG (kcal/mol)', fontsize=16)
         ax.set_title(f'{protein_name} - {self.version1_name} vs {self.version2_name}\n'
                     f'Pearson r = {correlation:.3f} (n={len(df)})',
-                    fontsize=15, fontweight='bold')
+                    fontsize=16, fontweight='bold')
 
         ax.set_aspect('equal', adjustable='box')
         ax.grid(True, alpha=0.3)
