@@ -210,20 +210,6 @@ class FoldXVersionComparison:
 
         return r, p_value
 
-    def _confusion_matrix(self, y_true, y_pred, labels):
-        """Confusion matrix implementation"""
-        n_labels = len(labels)
-        cm = np.zeros((n_labels, n_labels), dtype=int)
-
-        label_to_idx = {label: idx for idx, label in enumerate(labels)}
-
-        for true, pred in zip(y_true, y_pred):
-            true_idx = label_to_idx[true]
-            pred_idx = label_to_idx[pred]
-            cm[true_idx, pred_idx] += 1
-
-        return cm
-
     def _cohen_kappa(self, y_true, y_pred):
         """Cohen's kappa implementation"""
         y_true = np.array(y_true)
@@ -287,54 +273,15 @@ class FoldXVersionComparison:
         ax.axvline(x=self.ddg_threshold, color='gray', linestyle=':', alpha=0.5)
         ax.axvline(x=-self.ddg_threshold, color='gray', linestyle=':', alpha=0.5)
 
-        ax.set_xlabel(f'{self.version1_name} ΔΔG (kcal/mol)', fontsize=12)
-        ax.set_ylabel(f'{self.version2_name} ΔΔG (kcal/mol)', fontsize=12)
+        ax.set_xlabel(f'{self.version1_name} ΔΔG (kcal/mol)', fontsize=15)
+        ax.set_ylabel(f'{self.version2_name} ΔΔG (kcal/mol)', fontsize=15)
         ax.set_title(f'{protein_name} - {self.version1_name} vs {self.version2_name}\n'
-                    f'Pearson r = {correlation:.3f} (n={len(df)})', 
-                    fontsize=14, fontweight='bold')
+                    f'Pearson r = {correlation:.3f} (n={len(df)})',
+                    fontsize=15, fontweight='bold')
 
         ax.set_aspect('equal', adjustable='box')
         ax.grid(True, alpha=0.3)
         ax.legend()
-
-        plt.tight_layout()
-        plt.savefig(output_file, dpi=300, bbox_inches='tight')
-        plt.close()
-
-    def plot_confusion_matrix(self, df, protein_name, output_file):
-        v1_class = f'{self.version1_name}_class'
-        v2_class = f'{self.version2_name}_class'
-
-        labels = ['Stabilizing', 'Neutral', 'Destabilizing']
-        y_true = df[v1_class].values
-        y_pred = df[v2_class].values
-
-        cm = self._confusion_matrix(y_true, y_pred, labels)
-        cm_normalized = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
-
-        fig, ax = plt.subplots(figsize=(10, 8))
-
-        im = ax.imshow(cm_normalized, cmap='Blues', vmin=0, vmax=1, aspect='auto')
-
-        cbar = plt.colorbar(im, ax=ax)
-        cbar.set_label('Proportion', fontsize=11)
-
-        ax.set_xticks(np.arange(len(labels)))
-        ax.set_yticks(np.arange(len(labels)))
-        ax.set_xticklabels(labels)
-        ax.set_yticklabels(labels)
-
-        for i in range(len(labels)):
-            for j in range(len(labels)):
-                text = ax.text(j, i, f'{cm_normalized[i, j]:.2f}',
-                             ha="center", va="center",
-                             color="black" if cm_normalized[i, j] < 0.5 else "white",
-                             fontsize=12)
-
-        ax.set_xlabel(f'{self.version2_name} Classification', fontsize=12)
-        ax.set_ylabel(f'{self.version1_name} Classification', fontsize=12)
-        ax.set_title(f'{protein_name} - Classification Agreement\n(n={len(df)} mutations)',
-                    fontsize=14, fontweight='bold')
 
         plt.tight_layout()
         plt.savefig(output_file, dpi=300, bbox_inches='tight')
@@ -412,9 +359,6 @@ class FoldXVersionComparison:
 
         scatter_file = protein_output_dir / f'{protein_name}_scatter.png'
         self.plot_scatter(df, protein_name, r, scatter_file)
-
-        confusion_file = protein_output_dir / f'{protein_name}_confusion_matrix.png'
-        self.plot_confusion_matrix(df, protein_name, confusion_file)
 
         metrics = self.calculate_metrics(df)
 
