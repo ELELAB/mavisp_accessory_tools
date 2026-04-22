@@ -1,0 +1,13 @@
+curators:
+  Elena Papaleo:
+    affiliation:
+    - DCI, Denmark
+    - DTU, Denmark
+uniprot_ac: O60341-2
+refseq_id: NP_001009999 
+review_status: 0
+structure_source: AFDB
+linker_design: false
+pdb_id: ''
+stability_foldx_version: foldx5.1
+local_int_foldx_version: foldx5.1
