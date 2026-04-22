@@ -1,0 +1,75 @@
+#!/usr/bin/env python3
+
+# STRING2UPAC
+# Copyright (C) 2024  Eleni Kiachaki and Matteo Tiberti, Cancer Structural Biology, Danish Cancer Institute
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+import requests as rq
+import pandas as pd
+import argparse
+
+parser = argparse.ArgumentParser(description="Processing of STRING human protein alias file.")
+parser.add_argument("alias_file",
+    help="Path to the STRING alias file (e.g., 9606.protein.aliases.v12.0.txt)--a tab-delimited file that maps STRING protein IDs to aliases like UniProt accession codes.",
+)
+
+args = parser.parse_args()
+
+alias_file_path = args.alias_file
+print(f"Parsing db from {alias_file_path}",flush=True)
+df = pd.read_csv(alias_file_path, sep='\t')
+df = df.rename(columns={'#string_protein_id': 'string_protein_id'})
+df_upac = df[df['source'].isin(['UniProt_AC', 'Ensembl_HGNC_uniprot_ids'])]
+
+# Keep only unique alias values for each string_protein_id:
+df_upac = df_upac.drop_duplicates(subset=['string_protein_id', 'alias'])
+
+print(df.string_protein_id.unique().shape, flush=True)
+print(df_upac.string_protein_id.unique().shape, flush=True)
+
+primary_upacs = []
+
+print('running over database', flush=True)
+for idx, key in enumerate(df['string_protein_id'].unique()):
+    print(idx, key, flush=True)
+    ids = set()
+    entry_types = {}
+    this_id_df = df_upac[df_upac['string_protein_id'] == key]
+    for _, row in this_id_df.iterrows():
+        try:
+            resp = rq.get(f"https://rest.uniprot.org/uniprotkb/{row['alias']}.json").json()
+            if resp['entryType'] != 'Inactive':
+                primary_accession = resp['primaryAccession']
+                entry_type = resp['entryType']
+                ids.add(primary_accession)
+                entry_types[primary_accession] = entry_type
+        except Exception as e:
+            print(f"Could not get {key} {row['alias']}: {e}")
+
+    # Print if multiple primary accessions are found
+    if len(ids) > 1:
+        print(f"MULTIPLE PRIMARIES for STRING ID {key}: {ids}", flush=True)
+
+    # Classify all primaries as reviewed or unreviewed:
+    for primary in ids:
+        entry_type = entry_types.get(primary, '')
+        if entry_type == 'UniProtKB reviewed (Swiss-Prot)':
+            reviewed_status = 'yes'
+        elif entry_type == 'UniProtKB unreviewed (TrEMBL)':
+            reviewed_status = 'no'
+
+# Create a DataFrame and save to CSV
+df_primary_upacs = pd.DataFrame(primary_upacs, columns=['string_protein_id', 'primary_uniprot_ac', 'reviewed'])
+df_primary_upacs.to_csv('STRING_primary_upac.csv', index=False)
