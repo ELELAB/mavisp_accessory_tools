@@ -28,7 +28,8 @@ This repository provides accessory tools associated with papers and activities o
   *“Decoding ATG9A Variation: A Comprehensive Structural Investigation of All Missense Variants”*  
 - **ThermoMPNN_trainingdata_overlap**: Contains a python script to find matching proteins in a MAVISp dataset and the training datasets of ThermoMPNN (see paper: https://doi.org/10.1073/pnas.2314853121) with the purpose of defining a benchmarking dataset for the ThermoMPNN tool integrated into MAVISp. The directory also includes scripts for data cleanup steps that do **not** have to be rerun before using the comparison script.
 - **enzymes_annotation**: This Python script retrieves enzyme annotations starting from a UniProt accession (UniProt AC) by querying the M-CSA (https://www.ebi.ac.uk/thornton-srv/m-csa/) database and, when needed, the UniProt REST API. Its main purpose is to obtain enzyme classification (EC number), catalytic site residues, and information about whether the annotation is manually curated or predicted by homology. Depending on database availability and selected flags, the script can return manually curated catalytic residues from M-CSA, predicted catalytic residues based on homologous alignments, or, if no catalytic site information is available, only the EC classification retrieved from UniProt. The script uses REST API requests to collect data, processes results into structured tables using pandas, and outputs the results as CSV files.
-  
+- **mavisp_isoform_support**: A collection of tools and utilities that provide the necessary support to run **MAVISp** on **non-canonical isoforms**. The module helps extend standard MAVISp analyses beyond canonical UniProt entries by enabling identifier mapping, isoform-aware annotation, and preparation of the required input data and workflows for isoform-specific variant interpretation.
+
 ## Citations  
 
 If you use this repository, please cite the following works:  
