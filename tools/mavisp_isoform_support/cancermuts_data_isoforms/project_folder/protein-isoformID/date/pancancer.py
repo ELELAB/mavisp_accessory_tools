@@ -4,7 +4,7 @@ from cancermuts.datasources import UniProt
 from cancermuts.datasources import cBioPortal, COSMIC, ClinVar
 from cancermuts.datasources import RevelDatabase
 from cancermuts.datasources import gnomAD
-from cancermuts.datasources import PhosphoSite, MobiDB
+from cancermuts.datasources import PhosphoSite, MobiDB, dbPTM, GlyGen, NetPhos
 from cancermuts.datasources import ggetELMPredictions
 from cancermuts.exceptions import *
 from cancermuts.table import Table
@@ -101,6 +101,25 @@ try:
 except UnexpectedIsoformError:
     print("PhosphoSite annotations will not be added, as a non-canonical isoform has been provided")
 
+# dbPTM does not support non-canonical isoforms
+db = dbPTM('/data/databases/dbPTM/')
+
+try:
+    db.add_position_properties(seq)
+except UnexpectedIsoformError:
+    print("dbPTM annotations will not be added, as a non-canonical isoform has been provided")
+
+# GlyGen does not support non-canonical isoforms
+gg = GlyGen('/data/databases/GlyGen/', database_file='human_proteoform_glycosylation_sites_uniprotkb_filtered.csv')
+
+try:
+    gg.add_position_properties(seq)
+except UnexpectedIsoformError:
+    print("GlyGen annotations will not be added, as a non-canonical isoform has been provided")
+
+# add annotations from NetPhos
+np = NetPhos('/data/databases/netphos_human_proteome/netphos_human_isoforms/raw/')
+np.add_position_properties(seq)
 
 # MobiDB does not suport non-canonical isoforms
 mdb = MobiDB()
