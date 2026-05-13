@@ -2,7 +2,7 @@
 # For each protein/domain in both datasets, computes all-atom and CA RMSD
 # Matching is done by UniProt ID + protein name
 # RMSD is computed only on overlapping residues between the two structures
-# Run: python rmsd_matrix.py --foldx5_dir /path/to/folder --foldx51_dir /path/to/folder --output_dir ./rmsd_results
+# Run: python rmsd_matrix.py -f /data/user/shared_projects/mavisp_ensemble_sim_length/foldx5.1_evaluation/foldx5_initial_structures -i /data/user/shared_projects/mavisp_ensemble_sim_length/foldx5.1_evaluation/data_collection_foldx5.1 -o ./rmsd_results
 import os
 import glob
 import argparse
@@ -212,7 +212,8 @@ def plot_rmsd_distributions(df, output_dir):
     fig, axes = plt.subplots(1, 2, figsize=(12, 5))
     fig.suptitle("RMSD distributions: FoldX5 vs FoldX5.1 initial structures", fontsize=13, fontweight="bold", y=1.01)
     for ax, col, title in zip(axes, ["rmsd_all_atoms", "rmsd_ca"], ["All-atom RMSD (Å)", "Cα RMSD (Å)"]):
-        sns.histplot(df_clean[col], ax=ax, color=COLOR_DIST, edgecolor="white", bins=10, alpha=0.8)
+        bin_edges = np.arange(0, df_clean[col].max() + 1, 1)
+        sns.histplot(df_clean[col], ax=ax, color=COLOR_DIST, edgecolor="white", bins=bin_edges, alpha=0.8)
         ax.axvline(df_clean[col].median(), color="#CC0000", linestyle="--", linewidth=1.5, label=f"Median: {df_clean[col].median():.2f} Å")
         ax.axvline(df_clean[col].mean(), color="#555555", linestyle=":", linewidth=1.5, label=f"Mean: {df_clean[col].mean():.2f} Å")
         ax.set_xlabel(title)
@@ -286,9 +287,9 @@ def plot_rmsd_violin(df, output_dir):
 
 def main():
     parser = argparse.ArgumentParser(description="Compute RMSD between FoldX5 and FoldX5.1 initial structures")
-    parser.add_argument("--foldx5_dir", required=True, help="Path to FoldX5 folder (organized by protein name)")
-    parser.add_argument("--foldx51_dir", required=True, help="Root of FoldX5.1 data collection folder")
-    parser.add_argument("--output_dir", default="./rmsd_results", help="Where to save results (default: ./rmsd_results)")
+    parser.add_argument("-f", "--foldx5_dir", required=True, help="Path to FoldX5 folder (organized by protein name)")
+    parser.add_argument("-i", "--foldx51_dir", required=True, help="Root of FoldX5.1 data collection folder")
+    parser.add_argument("-o", "--output_dir", default="./rmsd_results", help="Where to save results (default: ./rmsd_results)")
     args = parser.parse_args()
 
     print("RMSD analysis: FoldX5 vs FoldX5.1 initial structures")

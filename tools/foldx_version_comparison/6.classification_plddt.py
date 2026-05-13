@@ -87,7 +87,9 @@ def load_all_proteins(foldx5_dir, foldx51_dir):
 def plot_plddt_distribution(df_mutations, output_dir):
     # kde distribution of plddt scores for agree vs disagree mutations across all proteins
     os.makedirs(output_dir, exist_ok=True)
-    fig, ax = plt.subplots(figsize=(8, 6))
+    fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+    ax = axes[0]
+    ax_bar = axes[1]
     for group, color in [("agree", color_agree), ("disagree", color_disagree)]:
         subset = df_mutations[df_mutations["agreement"] == group][col_plddt]
         if subset.empty:
@@ -101,6 +103,20 @@ def plot_plddt_distribution(df_mutations, output_dir):
     ax.set_ylabel("density")
     ax.set_title("pLDDT distribution by classification agreement\nFoldX5 vs FoldX5.1 (all proteins)")
     ax.legend(frameon=False)
+    # barplot with 3 pLDDT-wide bins
+    bin_edges = np.arange(0, 101, 3)
+    for group, color in [("agree", color_agree), ("disagree", color_disagree)]:
+        subset = df_mutations[df_mutations["agreement"] == group][col_plddt]
+        if subset.empty:
+            continue
+        counts, edges = np.histogram(subset, bins=bin_edges)
+        counts = counts / counts.sum()  # normalize to fraction
+        ax_bar.bar(edges[:-1], counts, width=3, color=color, alpha=0.6,
+                   label=f"{group} (n={len(subset)})", align="edge", edgecolor="white")
+    ax_bar.set_xlabel("pLDDT score")
+    ax_bar.set_ylabel("Fraction of mutations")
+    ax_bar.set_title("pLDDT distribution by classification agreement\n(3 Å bins)")
+    ax_bar.legend(frameon=False)
     plt.tight_layout()
     out = os.path.join(output_dir, "plddt_distribution_agree_disagree.png")
     plt.savefig(out, dpi=150, bbox_inches="tight")
