@@ -2,7 +2,6 @@
 # For each protein/domain in both datasets, computes all-atom and CA RMSD
 # Matching is done by UniProt ID + protein name
 # RMSD is computed only on overlapping residues between the two structures
-# Run: python rmsd_matrix.py -f /data/user/shared_projects/mavisp_ensemble_sim_length/foldx5.1_evaluation/foldx5_initial_structures -i /data/user/shared_projects/mavisp_ensemble_sim_length/foldx5.1_evaluation/data_collection_foldx5.1 -o ./rmsd_results
 import os
 import glob
 import argparse
@@ -18,10 +17,6 @@ from MDAnalysis.analysis import align
 warnings.filterwarnings("ignore")
 
 
-COLOR_VIOLIN_ALL  = "#C4A882"   # pale brown
-COLOR_VIOLIN_CA   = "#B8A0C8"   # pale purple
-COLOR_BAR_ALL     = "#B22222"   # firebrick
-COLOR_BAR_CA      = "#4A90A4"   # muted teal
 COLOR_DIST        = "#6A9CC4"   # soft blue
 
 mpl.rcParams.update({
@@ -201,8 +196,6 @@ def run_rmsd_analysis(pairs):
 
 def plot_rmsd_distributions(df, output_dir):
     # Plot 1: histogram + KDE for all-atom and CA RMSD with mean and median lines
-    # Plot 2: scatter of all-atom vs CA RMSD per structure
-    # Plot 3: bar plot of all structures sorted by CA RMSD
     os.makedirs(output_dir, exist_ok=True)
     df_clean = df.dropna(subset=["rmsd_all_atoms", "rmsd_ca"])
     df_clean = df_clean.copy()
@@ -224,64 +217,6 @@ def plot_rmsd_distributions(df, output_dir):
     plt.savefig(out, dpi=150, bbox_inches="tight")
     plt.close()
     print(f"\nSaved: {out}")
-
-    # Plot 2: all-atom vs CA scatter with diagonal reference line
-    fig, ax = plt.subplots(figsize=(6, 6))
-    ax.scatter(df_clean["rmsd_all_atoms"], df_clean["rmsd_ca"], color=COLOR_DIST, alpha=0.8, edgecolors="white", s=80)
-    lims = [0, max(df_clean[["rmsd_all_atoms", "rmsd_ca"]].max()) * 1.05]
-    ax.plot(lims, lims, color="#999999", linestyle="--", linewidth=1, label="y = x")
-    ax.set_xlabel("All-atom RMSD (Å)")
-    ax.set_ylabel("Cα RMSD (Å)")
-    ax.set_title("All-atom vs Cα RMSD per structure")
-    ax.legend(frameon=False)
-    out = os.path.join(output_dir, "rmsd_scatter_allatom_vs_ca.png")
-    plt.savefig(out, dpi=150, bbox_inches="tight")
-    plt.close()
-    print(f"Saved: {out}")
-
-    # Plot 3: bar plot sorted by CA RMSD
-    df_sorted = df_clean.sort_values("rmsd_ca", ascending=False).reset_index(drop=True)
-    fig, ax = plt.subplots(figsize=(max(10, len(df_sorted) * 0.5), 5))
-    x = np.arange(len(df_sorted))
-    ax.bar(x - 0.2, df_sorted["rmsd_all_atoms"], width=0.4, label="All-atom", color=COLOR_BAR_ALL, alpha=0.85)
-    ax.bar(x + 0.2, df_sorted["rmsd_ca"], width=0.4, label="Cα", color=COLOR_BAR_CA, alpha=0.85)
-    ax.set_xticks(x)
-    ax.set_xticklabels(df_sorted["label_clean"], rotation=45, ha="right", fontsize=11)
-    ax.set_ylabel("RMSD (Å)")
-    ax.set_title("RMSD per structure (sorted by Cα RMSD)")
-    ax.legend(frameon=False)
-    plt.tight_layout()
-    out = os.path.join(output_dir, "rmsd_barplot_sorted.png")
-    plt.savefig(out, dpi=150, bbox_inches="tight")
-    plt.close()
-    print(f"Saved: {out}")
-
-
-def plot_rmsd_violin(df, output_dir):
-    # Violin plot: distribution of all-atom and CA RMSD across all proteins
-    df_clean = df.dropna(subset=["rmsd_all_atoms", "rmsd_ca"])
-    df_clean = df_clean.copy()
-    df_clean["label_clean"] = df_clean["label"].apply(lambda x: "_".join(x.split("_")[1:]))
-    df_melt = df_clean.melt(
-        id_vars="label_clean",
-        value_vars=["rmsd_all_atoms", "rmsd_ca"],
-        var_name="type",
-        value_name="rmsd"
-    )
-    df_melt["type"] = df_melt["type"].replace({"rmsd_all_atoms": "All-atom", "rmsd_ca": "Cα"})
-    fig, ax = plt.subplots(figsize=(6, 6))
-    sns.violinplot(data=df_melt, x="type", y="rmsd", ax=ax,
-                   palette={"All-atom": COLOR_VIOLIN_ALL, "Cα": COLOR_VIOLIN_CA},
-                   inner="box", cut=0)
-    ax.set_xlabel("")
-    ax.set_ylabel("RMSD (Å)")
-    ax.set_title("RMSD distribution across all proteins\nFoldX5 vs FoldX5.1")
-    plt.tight_layout()
-    out = os.path.join(output_dir, "rmsd_violin.png")
-    plt.savefig(out, dpi=150, bbox_inches="tight")
-    plt.close()
-    print(f"Saved: {out}")
-
 
 # 4. MAIN
 
@@ -313,7 +248,6 @@ def main():
     print(df[["rmsd_all_atoms", "rmsd_ca"]].describe().round(3).to_string())
     print("\n[5] Generating plots...")
     plot_rmsd_distributions(df, args.output_dir)
-    plot_rmsd_violin(df, args.output_dir)
     print("\nDone.")
 if __name__ == "__main__":
     main()
