@@ -1,6 +1,6 @@
 # FoldX Version Comparison Tool
 
-# What it does
+## What it does
 
 Compares protein stability predictions between FoldX5 and FoldX5.1.
 
@@ -23,6 +23,68 @@ python test_foldx_comparison.py
 ## View results
 
 cd ~/foldx_comparison_results
+
+# rmsd_matrix.py
+
+## What it does
+
+Computes all-atom and Cα RMSD between the initial PDB structures used in the
+FoldX5 and FoldX5.1 datasets. Structures are matched by UniProt ID and protein
+name. RMSD is computed only on overlapping residues when the two versions cover
+different regions of the same protein. Alignment is performed using the QCP
+algorithm via MDAnalysis.
+
+## Requirements
+
+Python 3.10
+MDAnalysis >= 2.7.0
+numpy, pandas, matplotlib, seaborn
+
+## How to run
+
+python rmsd_matrix.py \
+    -f /path/to/foldx5_initial_structures \
+    -i /path/to/data_collection_foldx5.1 \
+    -o ./rmsd_results
+
+# Output
+
+rmsd_results.csv                table with all-atom and Cα RMSD per structure pair
+rmsd_distributions.png          histogram of RMSD values with mean and median lines
+rmsd_scatter_allatom_vs_ca.png  scatter of all-atom vs Cα RMSD per structure
+rmsd_barplot_sorted.png         bar plot of all structures sorted by Cα RMSD
+rmsd_violin.png                 violin plot of RMSD distribution across all protein
+
+# classification_plddt.py
+
+## What it does
+
+Tests whether classification disagreements between FoldX5 and FoldX5.1 are
+enriched in structurally uncertain regions. Each mutation is treated as a
+separate data point. Mutations are classified using MAVISp FoldX ddG
+thresholds, then labelled as agree or disagree depending on whether FoldX5 and
+FoldX5.1 assign the same stability class. pLDDT scores are taken from the
+FoldX5.1 dataset table.
+
+## Requirements
+
+Python 3.10
+numpy, pandas, matplotlib, seaborn
+
+## How to run
+
+python classification_plddt.py \
+    -f /path/to/foldx5_dataset_tables \
+    -i /path/to/foldx5.1_dataset_tables \
+    -o ./plddt_results
+
+# Output
+
+mutation_agreement_results.csv        table with FoldX5/FoldX5.1 classes, agreement labels, pLDDT scores, and ddG differences per mutation
+plddt_distribution_agree_disagree.png pLDDT density and binned distribution for agreeing vs disagreeing mutations
+plddt_vs_ddg_diff_scatter.png         scatter plot of pLDDT against absolute FoldX5.1-FoldX5 ddG difference
+per_protein_plddt_delta.csv           per-protein median pLDDT difference between disagreeing and agreeing mutations
+per_protein_plddt_delta.png           histogram of per-protein median pLDDT differences
 
 
 

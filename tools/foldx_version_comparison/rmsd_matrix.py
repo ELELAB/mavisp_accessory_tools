@@ -2,7 +2,6 @@
 # For each protein/domain in both datasets, computes all-atom and CA RMSD
 # Matching is done by UniProt ID + protein name
 # RMSD is computed only on overlapping residues between the two structures
-# Run: python rmsd_matrix.py --foldx5_dir /path/to/folder --foldx51_dir /path/to/folder --output_dir ./rmsd_results
 import os
 import glob
 import argparse
@@ -18,10 +17,6 @@ from MDAnalysis.analysis import align
 warnings.filterwarnings("ignore")
 
 
-COLOR_VIOLIN_ALL  = "#C4A882"   # pale brown
-COLOR_VIOLIN_CA   = "#B8A0C8"   # pale purple
-COLOR_BAR_ALL     = "#B22222"   # firebrick
-COLOR_BAR_CA      = "#4A90A4"   # muted teal
 COLOR_DIST        = "#6A9CC4"   # soft blue
 
 mpl.rcParams.update({
@@ -64,28 +59,7 @@ def collect_foldx5_pdbs(foldx5_dir):               # FoldX5 folder structure: fo
     print(f"[FoldX5]   Found {len(pdbs)} PDB files in {foldx5_dir}")
     return pdbs
 
-def collect_foldx51_pdbs(foldx51_dir):             # Path: foldx51_dir/USER/PROTEIN/free/stability/mutatex_input_preparation/AFDB_XXX-YYY/model_v6/saturation/UNIPROTID_trimmed.pdb
-    pdbs = {}
-    pattern = os.path.join(foldx51_dir, "**", "*_trimmed.pdb")
-    for pdb_path in glob.glob(pattern, recursive=True):
-        if "mutatex_input_preparation" not in pdb_path:
-            continue
-        parts = Path(pdb_path).parts
-        try:
-            foldx51_parts = Path(foldx51_dir).parts
-            relative_parts = parts[len(foldx51_parts):]
-            protein_name = relative_parts[1]
-            uniprot_id   = Path(pdb_path).stem.replace("_trimmed", "")
-            res_start, res_end = get_residue_range(pdb_path)
-            region_key = f"{uniprot_id}_{protein_name}_{res_start}-{res_end}"
-            if region_key not in pdbs:
-                pdbs[region_key] = {"path": pdb_path, "res_start": res_start, "res_end": res_end, "uniprot": uniprot_id, "protein": protein_name}
-        except Exception as e:
-            print(f"  [WARNING] Could not parse path {pdb_path}: {e}")
-            continue
-    print(f"[FoldX5.1] Found {len(pdbs)} PDB files in {foldx51_dir}")
-    return pdbs
-
+collect_foldx51_pdbs = collect_foldx5_pdbs
 
 def group_by_protein(pdbs):
     grouped = {}
@@ -194,101 +168,47 @@ def run_rmsd_analysis(pairs):
             "range_foldx5":   pair["range_foldx5"],
             "range_foldx51":  pair["range_foldx51"],
         })
-    return pd.DataFrame(results)
 
+    return pd.DataFrame(results).sort_values("rmsd_ca", ascending=False)
 
 # 3. VISUALIZATION
 
 def plot_rmsd_distributions(df, output_dir):
     # Plot 1: histogram + KDE for all-atom and CA RMSD with mean and median lines
-    # Plot 2: scatter of all-atom vs CA RMSD per structure
-    # Plot 3: bar plot of all structures sorted by CA RMSD
     os.makedirs(output_dir, exist_ok=True)
     df_clean = df.dropna(subset=["rmsd_all_atoms", "rmsd_ca"])
     df_clean = df_clean.copy()
     df_clean["label_clean"] = df_clean["label"].apply(lambda x: "_".join(x.split("_")[1:]))
 
     # Plot 1: distributions
-    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
-    fig.suptitle("RMSD distributions: FoldX5 vs FoldX5.1 initial structures", fontsize=13, fontweight="bold", y=1.01)
-    for ax, col, title in zip(axes, ["rmsd_all_atoms", "rmsd_ca"], ["All-atom RMSD (Å)", "Cα RMSD (Å)"]):
-        sns.histplot(df_clean[col], ax=ax, color=COLOR_DIST, edgecolor="white", bins=10, alpha=0.8)
+    for col, title, filename in [
+        ("rmsd_all_atoms", "All-atom RMSD (Å)", "rmsd_distribution_all_atoms.png"),
+        ("rmsd_ca", "Cα RMSD (Å)", "rmsd_distribution_ca.png"),
+    ]:
+        fig, ax = plt.subplots(figsize=(6, 5))
+        max_val = np.ceil(df_clean[col].max())
+        bins = np.arange(0, max_val + 1, 1)   # 1 Å bin width
+
+        sns.histplot(df_clean[col], ax=ax, color=COLOR_DIST, edgecolor="white", bins=bins, alpha=0.8)
         ax.axvline(df_clean[col].median(), color="#CC0000", linestyle="--", linewidth=1.5, label=f"Median: {df_clean[col].median():.2f} Å")
         ax.axvline(df_clean[col].mean(), color="#555555", linestyle=":", linewidth=1.5, label=f"Mean: {df_clean[col].mean():.2f} Å")
         ax.set_xlabel(title)
         ax.set_ylabel("Number of entries")
+        ax.set_title(f"{title} distribution\nFoldX5 vs FoldX5.1 initial structures")
         ax.legend(frameon=False)
-    plt.tight_layout()
-    out = os.path.join(output_dir, "rmsd_distributions.png")
-    plt.savefig(out, dpi=150, bbox_inches="tight")
-    plt.close()
-    print(f"\nSaved: {out}")
-
-    # Plot 2: all-atom vs CA scatter with diagonal reference line
-    fig, ax = plt.subplots(figsize=(6, 6))
-    ax.scatter(df_clean["rmsd_all_atoms"], df_clean["rmsd_ca"], color=COLOR_DIST, alpha=0.8, edgecolors="white", s=80)
-    lims = [0, max(df_clean[["rmsd_all_atoms", "rmsd_ca"]].max()) * 1.05]
-    ax.plot(lims, lims, color="#999999", linestyle="--", linewidth=1, label="y = x")
-    ax.set_xlabel("All-atom RMSD (Å)")
-    ax.set_ylabel("Cα RMSD (Å)")
-    ax.set_title("All-atom vs Cα RMSD per structure")
-    ax.legend(frameon=False)
-    out = os.path.join(output_dir, "rmsd_scatter_allatom_vs_ca.png")
-    plt.savefig(out, dpi=150, bbox_inches="tight")
-    plt.close()
-    print(f"Saved: {out}")
-
-    # Plot 3: bar plot sorted by CA RMSD
-    df_sorted = df_clean.sort_values("rmsd_ca", ascending=False).reset_index(drop=True)
-    fig, ax = plt.subplots(figsize=(max(10, len(df_sorted) * 0.5), 5))
-    x = np.arange(len(df_sorted))
-    ax.bar(x - 0.2, df_sorted["rmsd_all_atoms"], width=0.4, label="All-atom", color=COLOR_BAR_ALL, alpha=0.85)
-    ax.bar(x + 0.2, df_sorted["rmsd_ca"], width=0.4, label="Cα", color=COLOR_BAR_CA, alpha=0.85)
-    ax.set_xticks(x)
-    ax.set_xticklabels(df_sorted["label_clean"], rotation=45, ha="right", fontsize=11)
-    ax.set_ylabel("RMSD (Å)")
-    ax.set_title("RMSD per structure (sorted by Cα RMSD)")
-    ax.legend(frameon=False)
-    plt.tight_layout()
-    out = os.path.join(output_dir, "rmsd_barplot_sorted.png")
-    plt.savefig(out, dpi=150, bbox_inches="tight")
-    plt.close()
-    print(f"Saved: {out}")
-
-
-def plot_rmsd_violin(df, output_dir):
-    # Violin plot: distribution of all-atom and CA RMSD across all proteins
-    df_clean = df.dropna(subset=["rmsd_all_atoms", "rmsd_ca"])
-    df_clean = df_clean.copy()
-    df_clean["label_clean"] = df_clean["label"].apply(lambda x: "_".join(x.split("_")[1:]))
-    df_melt = df_clean.melt(
-        id_vars="label_clean",
-        value_vars=["rmsd_all_atoms", "rmsd_ca"],
-        var_name="type",
-        value_name="rmsd"
-    )
-    df_melt["type"] = df_melt["type"].replace({"rmsd_all_atoms": "All-atom", "rmsd_ca": "Cα"})
-    fig, ax = plt.subplots(figsize=(6, 6))
-    sns.violinplot(data=df_melt, x="type", y="rmsd", ax=ax,
-                   palette={"All-atom": COLOR_VIOLIN_ALL, "Cα": COLOR_VIOLIN_CA},
-                   inner="box", cut=0)
-    ax.set_xlabel("")
-    ax.set_ylabel("RMSD (Å)")
-    ax.set_title("RMSD distribution across all proteins\nFoldX5 vs FoldX5.1")
-    plt.tight_layout()
-    out = os.path.join(output_dir, "rmsd_violin.png")
-    plt.savefig(out, dpi=150, bbox_inches="tight")
-    plt.close()
-    print(f"Saved: {out}")
-
+        plt.tight_layout()
+        out = os.path.join(output_dir, filename)
+        plt.savefig(out, dpi=150, bbox_inches="tight")
+        plt.close()
+        print(f"\nSaved: {out}")
 
 # 4. MAIN
 
 def main():
     parser = argparse.ArgumentParser(description="Compute RMSD between FoldX5 and FoldX5.1 initial structures")
-    parser.add_argument("--foldx5_dir", required=True, help="Path to FoldX5 folder (organized by protein name)")
-    parser.add_argument("--foldx51_dir", required=True, help="Root of FoldX5.1 data collection folder")
-    parser.add_argument("--output_dir", default="./rmsd_results", help="Where to save results (default: ./rmsd_results)")
+    parser.add_argument("-f", "--foldx5_dir", required=True, help="Path to FoldX5 folder (organized by protein name)")
+    parser.add_argument("-i", "--foldx51_dir", required=True, help="Root of FoldX5.1 data collection folder")
+    parser.add_argument("-o", "--output_dir", default="./rmsd_results", help="Where to save results (default: ./rmsd_results)")
     args = parser.parse_args()
 
     print("RMSD analysis: FoldX5 vs FoldX5.1 initial structures")
@@ -312,7 +232,6 @@ def main():
     print(df[["rmsd_all_atoms", "rmsd_ca"]].describe().round(3).to_string())
     print("\n[5] Generating plots...")
     plot_rmsd_distributions(df, args.output_dir)
-    plot_rmsd_violin(df, args.output_dir)
     print("\nDone.")
 if __name__ == "__main__":
     main()
