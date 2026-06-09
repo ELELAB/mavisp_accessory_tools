@@ -59,28 +59,7 @@ def collect_foldx5_pdbs(foldx5_dir):               # FoldX5 folder structure: fo
     print(f"[FoldX5]   Found {len(pdbs)} PDB files in {foldx5_dir}")
     return pdbs
 
-def collect_foldx51_pdbs(foldx51_dir):             # Path: foldx51_dir/USER/PROTEIN/free/stability/mutatex_input_preparation/AFDB_XXX-YYY/model_v6/saturation/UNIPROTID_trimmed.pdb
-    pdbs = {}
-    pattern = os.path.join(foldx51_dir, "**", "*_trimmed.pdb")
-    for pdb_path in glob.glob(pattern, recursive=True):
-        if "mutatex_input_preparation" not in pdb_path:
-            continue
-        parts = Path(pdb_path).parts
-        try:
-            foldx51_parts = Path(foldx51_dir).parts
-            relative_parts = parts[len(foldx51_parts):]
-            protein_name = relative_parts[1]
-            uniprot_id   = Path(pdb_path).stem.replace("_trimmed", "")
-            res_start, res_end = get_residue_range(pdb_path)
-            region_key = f"{uniprot_id}_{protein_name}_{res_start}-{res_end}"
-            if region_key not in pdbs:
-                pdbs[region_key] = {"path": pdb_path, "res_start": res_start, "res_end": res_end, "uniprot": uniprot_id, "protein": protein_name}
-        except Exception as e:
-            print(f"  [WARNING] Could not parse path {pdb_path}: {e}")
-            continue
-    print(f"[FoldX5.1] Found {len(pdbs)} PDB files in {foldx51_dir}")
-    return pdbs
-
+collect_foldx51_pdbs = collect_foldx5_pdbs
 
 def group_by_protein(pdbs):
     grouped = {}
@@ -189,8 +168,8 @@ def run_rmsd_analysis(pairs):
             "range_foldx5":   pair["range_foldx5"],
             "range_foldx51":  pair["range_foldx51"],
         })
-    return pd.DataFrame(results)
 
+    return pd.DataFrame(results).sort_values("rmsd_ca", ascending=False)
 
 # 3. VISUALIZATION
 
@@ -202,21 +181,26 @@ def plot_rmsd_distributions(df, output_dir):
     df_clean["label_clean"] = df_clean["label"].apply(lambda x: "_".join(x.split("_")[1:]))
 
     # Plot 1: distributions
-    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
-    fig.suptitle("RMSD distributions: FoldX5 vs FoldX5.1 initial structures", fontsize=13, fontweight="bold", y=1.01)
-    for ax, col, title in zip(axes, ["rmsd_all_atoms", "rmsd_ca"], ["All-atom RMSD (Å)", "Cα RMSD (Å)"]):
-        bin_edges = np.arange(0, df_clean[col].max() + 1, 1)
-        sns.histplot(df_clean[col], ax=ax, color=COLOR_DIST, edgecolor="white", bins=bin_edges, alpha=0.8)
+    for col, title, filename in [
+        ("rmsd_all_atoms", "All-atom RMSD (Å)", "rmsd_distribution_all_atoms.png"),
+        ("rmsd_ca", "Cα RMSD (Å)", "rmsd_distribution_ca.png"),
+    ]:
+        fig, ax = plt.subplots(figsize=(6, 5))
+        max_val = np.ceil(df_clean[col].max())
+        bins = np.arange(0, max_val + 1, 1)   # 1 Å bin width
+
+        sns.histplot(df_clean[col], ax=ax, color=COLOR_DIST, edgecolor="white", bins=bins, alpha=0.8)
         ax.axvline(df_clean[col].median(), color="#CC0000", linestyle="--", linewidth=1.5, label=f"Median: {df_clean[col].median():.2f} Å")
         ax.axvline(df_clean[col].mean(), color="#555555", linestyle=":", linewidth=1.5, label=f"Mean: {df_clean[col].mean():.2f} Å")
         ax.set_xlabel(title)
         ax.set_ylabel("Number of entries")
+        ax.set_title(f"{title} distribution\nFoldX5 vs FoldX5.1 initial structures")
         ax.legend(frameon=False)
-    plt.tight_layout()
-    out = os.path.join(output_dir, "rmsd_distributions.png")
-    plt.savefig(out, dpi=150, bbox_inches="tight")
-    plt.close()
-    print(f"\nSaved: {out}")
+        plt.tight_layout()
+        out = os.path.join(output_dir, filename)
+        plt.savefig(out, dpi=150, bbox_inches="tight")
+        plt.close()
+        print(f"\nSaved: {out}")
 
 # 4. MAIN
 
