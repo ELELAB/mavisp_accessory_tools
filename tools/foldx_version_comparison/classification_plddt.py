@@ -8,6 +8,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
+from matplotlib import pyplot as plt
 import seaborn as sns
 warnings.filterwarnings("ignore")
 mpl.rcParams.update({
