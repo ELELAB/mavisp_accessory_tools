@@ -4,7 +4,7 @@ from cancermuts.datasources import UniProt
 from cancermuts.datasources import cBioPortal, COSMIC, ClinVar
 from cancermuts.datasources import RevelDatabase
 from cancermuts.datasources import gnomAD
-from cancermuts.datasources import PhosphoSite, MobiDB
+from cancermuts.datasources import PhosphoSite, MobiDB, dbPTM, GlyGen, NetPhos
 from cancermuts.datasources import ggetELMPredictions
 from cancermuts.exceptions import *
 from cancermuts.table import Table
@@ -78,7 +78,7 @@ if args.external_mutations:
         ma.add_mutations(seq)
 
         # add PTM annotations to the sequence object
-        ma.add_position_properties(seq)
+        ma.add_sequence_properties(seq)
 
         # add structure or linear motif annotation to the sequence object
         ma.add_sequence_properties(seq)
@@ -97,16 +97,35 @@ gnomad.add_metadata(seq, md_type=['gnomad_exome_allele_frequency',
 ps = PhosphoSite('/data/databases/phosphosite/')
 
 try:
-    ps.add_position_properties(seq)
+    ps.add_sequence_properties(seq)
 except UnexpectedIsoformError:
     print("PhosphoSite annotations will not be added, as a non-canonical isoform has been provided")
 
+# dbPTM does not support non-canonical isoforms
+db = dbPTM('/data/databases/dbPTM/')
+
+try:
+    db.add_sequence_properties(seq)
+except UnexpectedIsoformError:
+    print("dbPTM annotations will not be added, as a non-canonical isoform has been provided")
+
+# GlyGen does not support non-canonical isoforms
+gg = GlyGen('/data/databases/GlyGen/', database_file='human_proteoform_glycosylation_sites_uniprotkb_filtered.csv')
+
+try:
+    gg.add_sequence_properties(seq)
+except UnexpectedIsoformError:
+    print("GlyGen annotations will not be added, as a non-canonical isoform has been provided")
+
+# add annotations from NetPhos
+np = NetPhos('/data/databases/netphos_human_proteome/netphos_human_isoforms/raw/')
+np.add_sequence_properties(seq)
 
 # MobiDB does not suport non-canonical isoforms
 mdb = MobiDB()
 
 try:
-    mdb.add_position_properties(seq)
+    mdb.add_sequence_properties(seq)
 except UnexpectedIsoformError:
     print("MobiDB annotations will not be added, as a non-canonical isoform has been provided")
 
