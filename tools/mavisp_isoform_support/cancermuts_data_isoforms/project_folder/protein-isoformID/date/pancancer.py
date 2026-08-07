@@ -49,8 +49,15 @@ cosmic = COSMIC(targeted_database_file='/data/databases/cosmic-v104/Cosmic_Compl
 				classification_database_file='/data/databases/cosmic-v104/Cosmic_Classification_v104_GRCh38.tsv',
 				database_encoding='latin1', lazy_load_db=True,
                 )
-cosmic.add_mutations(seq, genome_assembly_version='GRCh38', metadata=['genomic_coordinates', 'genomic_mutations',
+try:
+    cosmic.add_mutations(seq, genome_assembly_version='GRCh38', metadata=['genomic_coordinates', 'genomic_mutations',
                                                 'cancer_site', 'cancer_histology'])
+except ValueError as e:
+    if "is not present in the database files" in str(e):
+        print(f"WARNING: Skipping COSMIC for {args.prt}: gene not found in COSMIC.")
+    else:
+        raise
+
 #add mutations from ClinVar:
 if args.refseq:
     seq.aliases["refseq"] = args.refseq
@@ -89,9 +96,9 @@ rl.add_metadata(seq)
 
 
 # add annotations from gnomAD
-gnomad = gnomAD(version='2.1')
+gnomad = gnomAD(version='2.1', reference_genome_fasta="/data/databases/genome_annotation/hg19.fa")
 gnomad.add_metadata(seq, md_type=['gnomad_exome_allele_frequency',
-                                      'gnomad_genome_allele_frequency'])
+	                              'gnomad_genome_allele_frequency'])
 
 # PhosphoSite does not support non-canonical isoforms
 ps = PhosphoSite('/data/databases/phosphosite/')
