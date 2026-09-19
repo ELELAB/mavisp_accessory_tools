@@ -1,4 +1,19 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# Copyright (C) 2026, Matteo Arnaudi  <mata@cancer.dk>,<matarn@dtu.dk>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
 
@@ -8,6 +23,9 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 import pandas as pd
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 
 
 MERGED_REACTION_BASE_COLUMNS = [
@@ -78,48 +96,24 @@ def parse_arguments() -> argparse.Namespace:
 
 
 def find_result_files(input_dir: Path, result_filename: str) -> List[Path]:
-    """
-    Find result files directly inside first-level UniProt subfolders.
-
-    Example:
-        input_dir/P04637/result.csv
-        input_dir/Q8N726/result.csv
-    """
     return sorted(input_dir.glob(f"*/{result_filename}"))
 
 
 def infer_target_uniprot_ac(result_file: Path) -> str:
-    """Infer the target UniProt accession from the parent folder name."""
     return result_file.parent.name
 
 
-def harmonize_target_columns(df: pd.DataFrame, result_file: Path) -> pd.DataFrame:
-    """
-    Ensure target_uniprot_ac and target_name are present.
-
-    Priority for target_uniprot_ac:
-        1. existing target_uniprot_ac column
-        2. existing uniprot_ac column
-        3. parent folder name
-
-    Priority for target_name:
-        1. existing target_name column
-        2. existing protein column
-        3. empty string
-    """
+def harmonize_target_columns(
+    df: pd.DataFrame,
+    result_file: Path,
+) -> pd.DataFrame:
     df = df.copy()
 
     if "target_uniprot_ac" not in df.columns:
-        if "uniprot_ac" in df.columns:
-            df["target_uniprot_ac"] = df["uniprot_ac"]
-        else:
-            df["target_uniprot_ac"] = infer_target_uniprot_ac(result_file)
+        df["target_uniprot_ac"] = infer_target_uniprot_ac(result_file)
 
     if "target_name" not in df.columns:
-        if "protein" in df.columns:
-            df["target_name"] = df["protein"]
-        else:
-            df["target_name"] = ""
+        df["target_name"] = ""
 
     return df
 
@@ -150,9 +144,6 @@ def load_result_files(result_files: List[Path]) -> pd.DataFrame:
 
 
 def get_pathway_columns(df: pd.DataFrame) -> List[str]:
-    """
-    Return pathway_1/pathway_1_id ... pathway_n/pathway_n_id in numeric order.
-    """
     pathway_numbers = set()
 
     for column in df.columns:
@@ -176,11 +167,6 @@ def get_pathway_columns(df: pd.DataFrame) -> List[str]:
 
 
 def select_existing_columns(df: pd.DataFrame, columns: List[str]) -> pd.DataFrame:
-    """
-    Select requested columns, creating missing columns as empty strings.
-
-    This makes the script robust if one result.csv lacks a specific column.
-    """
     df = df.copy()
 
     for column in columns:
@@ -191,13 +177,6 @@ def select_existing_columns(df: pd.DataFrame, columns: List[str]) -> pd.DataFram
 
 
 def find_sequence_site_column(df: pd.DataFrame) -> Optional[str]:
-    """
-    Find sequence_site column independently of case/style.
-
-    It accepts:
-        sequence_site
-        SequenceSite
-    """
     candidates: Dict[str, str] = {
         str(col).lower(): str(col)
         for col in df.columns
@@ -211,25 +190,346 @@ def find_sequence_site_column(df: pd.DataFrame) -> Optional[str]:
 
 
 def is_single_numeric_sequence_site(value: object) -> bool:
-    """
-    True only for a single integer-like residue position.
-
-    Accepted:
-        330
-        "330"
-
-    Rejected:
-        "330_331"
-        "330-331"
-        "330;331"
-        empty / NaN
-    """
     if pd.isna(value):
         return False
 
     value_str = str(value).strip()
-
     return bool(re.fullmatch(r"\d+", value_str))
+
+
+def build_target_label(df: pd.DataFrame) -> pd.Series:
+    return (
+        df["target_uniprot_ac"].fillna("").astype(str).str.strip()
+        + " | "
+        + df["target_name"].fillna("").astype(str).str.strip()
+    )
+
+
+def save_highest_pathways_plot(
+    concatenated_df: pd.DataFrame,
+    output_dir: Path,
+) -> None:
+    required = {"target_uniprot_ac", "target_name", "highest_pathway"}
+    if not required.issubset(concatenated_df.columns):
+        print("[WARNING] Cannot create highest_pathways.pdf: missing required columns.")
+        return
+
+    plot_df = concatenated_df.copy()
+    plot_df["target_label"] = build_target_label(plot_df)
+    plot_df["highest_pathway"] = plot_df["highest_pathway"].fillna("").astype(str).str.strip()
+
+    plot_df = plot_df[
+        (plot_df["target_label"] != " | ")
+        & (plot_df["highest_pathway"] != "")
+    ][["target_label", "highest_pathway"]].drop_duplicates()
+
+    if plot_df.empty:
+        print("[WARNING] No data available for highest_pathways.pdf")
+        return
+
+    pathway_order = (
+        plot_df["highest_pathway"]
+        .value_counts()
+        .index
+        .tolist()
+    )
+
+    target_order = (
+        plot_df["target_label"]
+        .value_counts()
+        .index
+        .tolist()
+    )
+
+    x_map = {pathway: i for i, pathway in enumerate(pathway_order)}
+    y_map = {target: i for i, target in enumerate(target_order)}
+
+    x = plot_df["highest_pathway"].map(x_map)
+    y = plot_df["target_label"].map(y_map)
+
+    fig_width = max(8, len(pathway_order) * 0.6)
+    fig_height = max(6, len(target_order) * 0.35)
+
+    fig, ax = plt.subplots(figsize=(fig_width, fig_height))
+    ax.scatter(x, y, marker="s", s=80)
+
+    ax.set_xticks(range(len(pathway_order)))
+    ax.set_xticklabels(pathway_order, rotation=90)
+    ax.set_yticks(range(len(target_order)))
+    ax.set_yticklabels(target_order)
+
+    ax.set_xlabel("Highest pathway")
+    ax.set_ylabel("Target")
+    ax.set_title("Target × highest pathway")
+    ax.grid(True, linestyle=":", alpha=0.4)
+
+    fig.tight_layout()
+    out_file = output_dir / "highest_pathways.pdf"
+    fig.savefig(out_file)
+    plt.close(fig)
+
+    print(f"[INFO] Output written: {out_file}")
+
+
+def summarize_functional_status(values: pd.Series) -> str:
+    """
+    Aggregate functional-status annotations for one target/disease pair.
+    """
+    has_lof = False
+    has_gof = False
+
+    for value in values.dropna():
+        value_str = str(value).strip().lower()
+
+        if not value_str:
+            continue
+
+        normalized = re.sub(r"[_-]+", " ", value_str)
+        normalized = re.sub(r"\s+", " ", normalized)
+
+        if normalized == "lof" or "loss of function" in normalized:
+            has_lof = True
+
+        if normalized == "gof" or "gain of function" in normalized:
+            has_gof = True
+
+    if has_lof and has_gof:
+        return "mixed"
+
+    if has_lof:
+        return "loss_of_function"
+
+    if has_gof:
+        return "gain_of_function"
+
+    return "unknown"
+
+
+def save_disease_pathways_plot(
+    concatenated_df: pd.DataFrame,
+    output_dir: Path,
+) -> None:
+    """
+    Plot target x disease associations.
+
+    X axis:
+        disease_name
+
+    Y axis:
+        target UniProt accession | target protein name
+
+    Symbol/color:
+        LoF, GoF, mixed, or unknown.
+    """
+    required = {
+        "target_uniprot_ac",
+        "target_name",
+        "disease_name",
+        "functional_status",
+    }
+
+    if not required.issubset(concatenated_df.columns):
+        missing = sorted(
+            required.difference(concatenated_df.columns)
+        )
+        print(
+            "[WARNING] Cannot create disease_targets.pdf. "
+            f"Missing required columns: {', '.join(missing)}"
+        )
+        return
+
+    plot_df = concatenated_df.copy()
+    plot_df["target_label"] = build_target_label(plot_df)
+
+    plot_df["disease_name"] = (
+        plot_df["disease_name"]
+        .fillna("")
+        .astype(str)
+        .str.strip()
+    )
+
+    plot_df = plot_df[
+        (plot_df["target_label"] != " | ")
+        & (plot_df["disease_name"] != "")
+    ].copy()
+
+    if plot_df.empty:
+        print(
+            "[WARNING] No disease annotations available "
+            "for disease_targets.pdf"
+        )
+        return
+
+    agg_df = (
+        plot_df.groupby(
+            [
+                "target_label",
+                "disease_name",
+            ],
+            dropna=False,
+        )["functional_status"]
+        .apply(summarize_functional_status)
+        .reset_index(name="status")
+    )
+
+    if agg_df.empty:
+        print(
+            "[WARNING] No aggregated disease data available "
+            "for disease_targets.pdf"
+        )
+        return
+
+    disease_order = (
+        agg_df["disease_name"]
+        .value_counts()
+        .index
+        .tolist()
+    )
+
+    target_order = (
+        agg_df["target_label"]
+        .value_counts()
+        .index
+        .tolist()
+    )
+
+    x_map = {
+        disease: index
+        for index, disease in enumerate(disease_order)
+    }
+
+    y_map = {
+        target: index
+        for index, target in enumerate(target_order)
+    }
+
+    style_map = {
+        "loss_of_function": {
+            "marker": "o",
+            "color": "tab:blue",
+            "label": "LoF",
+        },
+        "gain_of_function": {
+            "marker": "^",
+            "color": "tab:red",
+            "label": "GoF",
+        },
+        "mixed": {
+            "marker": "s",
+            "color": "tab:purple",
+            "label": "Mixed",
+        },
+        "unknown": {
+            "marker": "x",
+            "color": "0.5",
+            "label": "Unknown",
+        },
+    }
+
+    fig_width = max(
+        7.0,
+        min(
+            24.0,
+            1.35 * len(disease_order) + 3.0,
+        ),
+    )
+
+    fig_height = max(
+        3.5,
+        min(
+            24.0,
+            0.55 * len(target_order) + 2.5,
+        ),
+    )
+
+    fig, ax = plt.subplots(
+        figsize=(
+            fig_width,
+            fig_height,
+        )
+    )
+
+    for status, style in style_map.items():
+        subset = agg_df[
+            agg_df["status"] == status
+        ]
+
+        if subset.empty:
+            continue
+
+        ax.scatter(
+            subset["disease_name"].map(x_map),
+            subset["target_label"].map(y_map),
+            marker=style["marker"],
+            s=95,
+            c=style["color"],
+            label=style["label"],
+            zorder=3,
+        )
+
+    ax.set_xticks(
+        range(len(disease_order))
+    )
+
+    ax.set_xticklabels(
+        disease_order,
+        rotation=45,
+        ha="right",
+    )
+
+    ax.set_yticks(
+        range(len(target_order))
+    )
+
+    ax.set_yticklabels(
+        target_order
+    )
+
+    ax.set_xlabel("Disease")
+    ax.set_ylabel("Target")
+    ax.set_title("Target × disease")
+
+    ax.set_xlim(
+        -0.5,
+        len(disease_order) - 0.5,
+    )
+
+    ax.set_ylim(
+        -0.5,
+        len(target_order) - 0.5,
+    )
+
+    ax.grid(
+        True,
+        linestyle=":",
+        alpha=0.25,
+        zorder=0,
+    )
+
+    ax.legend(
+        title="Functional status",
+        bbox_to_anchor=(1.02, 1.0),
+        loc="upper left",
+        borderaxespad=0.0,
+    )
+
+    fig.tight_layout()
+
+    out_file = (
+        output_dir
+        / "disease_targets.pdf"
+    )
+
+    fig.savefig(
+        out_file,
+        bbox_inches="tight",
+    )
+
+    plt.close(fig)
+
+    print(
+        f"[INFO] Output written: {out_file}"
+    )
 
 
 def write_outputs(concatenated_df: pd.DataFrame, output_dir: Path) -> None:
@@ -249,11 +549,7 @@ def write_outputs(concatenated_df: pd.DataFrame, output_dir: Path) -> None:
     ).drop_duplicates()
 
     merged_reaction_file = output_dir / "merged_reaction.csv"
-
-    merged_reaction_df.to_csv(
-        merged_reaction_file,
-        index=False
-    )
+    merged_reaction_df.to_csv(merged_reaction_file, index=False)
 
     merged_highest_pathways_df = select_existing_columns(
         concatenated_df,
@@ -261,11 +557,7 @@ def write_outputs(concatenated_df: pd.DataFrame, output_dir: Path) -> None:
     ).drop_duplicates()
 
     merged_highest_pathways_file = output_dir / "merged_highest_pathways.csv"
-
-    merged_highest_pathways_df.to_csv(
-        merged_highest_pathways_file,
-        index=False
-    )
+    merged_highest_pathways_df.to_csv(merged_highest_pathways_file, index=False)
 
     sequence_site_column = find_sequence_site_column(concatenated_df)
 
@@ -275,7 +567,6 @@ def write_outputs(concatenated_df: pd.DataFrame, output_dir: Path) -> None:
             "Writing empty disease_single_sequence_site.csv."
         )
         disease_single_sequence_site_df = concatenated_df.iloc[0:0].copy()
-
     else:
         disease_single_sequence_site_df = concatenated_df[
             (
@@ -290,7 +581,6 @@ def write_outputs(concatenated_df: pd.DataFrame, output_dir: Path) -> None:
         ].copy().drop_duplicates()
 
     disease_single_sequence_site_file = output_dir / "disease_single_sequence_site.csv"
-
     disease_single_sequence_site_df.to_csv(
         disease_single_sequence_site_file,
         index=False
@@ -304,6 +594,9 @@ def write_outputs(concatenated_df: pd.DataFrame, output_dir: Path) -> None:
 
     print(f"[INFO] Output written: {disease_single_sequence_site_file}")
     print(f"[INFO] Rows: {len(disease_single_sequence_site_df)}")
+
+    save_highest_pathways_plot(concatenated_df, output_dir)
+    save_disease_pathways_plot(concatenated_df, output_dir)
 
 
 def main() -> None:
