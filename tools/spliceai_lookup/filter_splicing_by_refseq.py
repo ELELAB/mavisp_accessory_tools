@@ -65,7 +65,11 @@ def filter_outputs(protein_id, input_dir, output_dir):
             refs = ast.literal_eval(value)
             if not isinstance(refs, list):
                 raise ValueError(f'{source}: ref_seq_id must contain a list: {value!r}')
-            return transcript in refs
+            target_accession = transcript.split(".")[0]
+            return any(
+                isinstance(ref, str) and ref.split(".")[0] == target_accession
+                for ref in refs
+            )
         filtered = data.loc[data['ref_seq_id'].map(matches)].copy()
         if filtered.empty:
             raise ValueError(f'{source}: no rows for {transcript}; check RefSeq mappings')
