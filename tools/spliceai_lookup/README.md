@@ -387,3 +387,24 @@ Inside maf_file or mavisp file folder:
 bash run.sh
 ```
 
+### Filter predictions for MAVISp
+
+When using these predictions for MAVISp curation, run `filter_splicing_by_refseq.py` before importing them into MAVISp to retain only predictions for the RefSeq transcript corresponding to the selected protein.
+
+The script takes a RefSeq protein accession (`NP_...`), retrieves its associated transcript (`NM_...`) from NCBI, and filters both predictor outputs using the `ref_seq_id` column. This step requires internet access; subsequent MAVISp ingestion uses only the filtered local files.
+
+The input directory must contain `pangolin_output.csv` and `spliceai_output.csv`.
+
+```bash
+python filter_splicing_by_refseq.py \
+  -r NP_000537 \
+  -i raw_splicing \
+  -o filtered_splicing
+```
+
+Use `-i .` if the predictor output files are in the current directory. Replace `NP_000537` with the RefSeq protein accession specified in the `input.csv` file used to initialize the MAVISp workflow.
+
+The output directory contains the two filtered CSVs, with their original columns preserved, and `splicing_provenance.json`, which records the NP-to-NM mapping and input/output row counts. The raw files remain unchanged.
+
+Copy the filtered CSVs into the relevant MAVISp module folder, for example `TP53/simple_mode/splicing/`. Keep the provenance file with the data collection records. No changes to `metadata.yaml` are required.
+
