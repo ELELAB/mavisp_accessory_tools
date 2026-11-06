@@ -1,48 +1,110 @@
 modes:
   simple:
-    experimental_column: "Experimental data (DHFR-PCA yeast, Stability (MAVEdb))"
-    experimental_column_classification: "Experimental data classification (DHFR-PCA yeast, Stability (MAVEdb))"
-    experimental_thresholds: [-1,-0.161,1]
+    score_classifications:
+      GEMME:
+        column: GEMME Score
+        output_column: GEMME classification
+        damaging_threshold: -3.0
+        direction: lower
+        otherwise_class: Neutral
+        missing_class: Uncertain
+      DeMaSk:
+        column: DeMaSk delta fitness
+        output_column: DeMaSk classification
+        damaging_threshold: -0.25
+        direction: lower
+        otherwise_class: Neutral
+        missing_class: Uncertain
+    experimental_column: Experimental data (DHFR-PCA yeast, Stability (MAVEdb))
+    experimental_column_classification: Experimental data classification (DHFR-PCA yeast, Stability (MAVEdb))
+    experimental_thresholds:
+    - -1
+    - -0.161
+    - 1
     normalization:
       Damaging:
-        - "Damaging"
-        - "damaging"
-        - "Destabilizing"
-        - "destabilizing"
-        - "pathogenic"
-        - "Pathogenic"
+      - Damaging
+      - damaging
+      - Destabilizing
+      - destabilizing
+      - pathogenic
+      - Pathogenic
+      - mixed_effects
       Neutral:
-        - "Neutral"
-        - "neutral"
-        - "Benign"
-        - "benign"
+      - Neutral
+      - neutral
+      - Benign
+      - benign
+      - stabilizing
+      - Stabilizing
       Uncertain:
-        - "Uncertain"
-        - "uncertain"
+      - Uncertain
+      - uncertain
     comparisons:
-      - name: "RaSP-FoldX_consensus_with_GEMME_local"
-        columns: ["Stability classification, alphafold, (RaSP, FoldX)", "GEMME classification", "Local Int. classification (PMS2_AFmulti)"]
-        priority:
-          class_order: ["Damaging", "Neutral"]
-          priority_for_classification:
-            Damaging: ["GEMME classification", "Stability classification, alphafold, (RaSP, FoldX)"]
-            Neutral:  ["GEMME classification", "Stability classification, alphafold, (RaSP, FoldX)"]
-      - name: "RaSP-FoldX_consensus_with_DeMaSK_local"
-        columns: ["Stability classification, alphafold, (RaSP, FoldX)", "DeMaSk classification", "Local Int. classification (PMS2_AFmulti)"]
-        priority:
-          class_order: ["Damaging", "Neutral"]
-          priority_for_classification:
-            Damaging: ["DeMaSk classification", "Stability classification, alphafold, (RaSP, FoldX)", "Local Int. classification (PMS2_AFmulti)"]
-            Neutral:  ["DeMaSk classification", "Stability classification, alphafold, (RaSP, FoldX)","Local Int. classification (PMS2_AFmulti)"]
-        weighted:
-          weights:
-            "DeMaSk classification": 0.4
-            "Stability classification, alphafold, (RaSP, FoldX)": 0.3
-            "Local Int. classification (PMS2_AFmulti)": 0.3 
-          threshold: 0.5
-        voting:
-          target_class: "Damaging"
-          logic: "majority"
-          fallback: "Neutral"
-          handle_uncertain: "return_uncertain"
-
+    - name: GEMME
+      columns:
+      - GEMME classification
+      priority:
+        class_order:
+        - Damaging
+        - Neutral
+        - Uncertain
+        priority_for_classification:
+          Damaging: &id001
+          - GEMME classification
+          Neutral: *id001
+          Uncertain: *id001
+    - name: DeMaSk
+      columns:
+      - DeMaSk classification
+      priority:
+        class_order:
+        - Damaging
+        - Neutral
+        - Uncertain
+        priority_for_classification:
+          Damaging: &id002
+          - DeMaSk classification
+          Neutral: *id002
+          Uncertain: *id002
+    - name: Stability_priority
+      columns:
+      - Stability classification, AFDB, (RaSP, FoldX)
+      priority:
+        class_order:
+        - Damaging
+        - Neutral
+        - Uncertain
+        priority_for_classification:
+          Damaging: &id003
+          - Stability classification, AFDB, (RaSP, FoldX)
+          Neutral: *id003
+          Uncertain: *id003
+    - name: Combined_test
+      columns:
+      - Stability classification, AFDB, (RaSP, FoldX)
+      - Local Int. classification (PMS2_AFmulti)
+      - DeMaSk classification
+      priority:
+        class_order:
+        - Damaging
+        - Neutral
+        - Uncertain
+        priority_for_classification:
+          Damaging: &id004
+          - Stability classification, AFDB, (RaSP, FoldX)
+          - Local Int. classification (PMS2_AFmulti)
+          - DeMaSk classification
+          Neutral: *id004
+          Uncertain: *id004
+      weighted:
+        weights:
+          Stability classification, AFDB, (RaSP, FoldX): 0.4
+          Local Int. classification (PMS2_AFmulti): 0.3
+          DeMaSk classification: 0.3
+        threshold: 0.5
+      voting:
+        target_class: Damaging
+        logic: majority
+        fallback: Neutral
+        handle_uncertain: return_uncertain

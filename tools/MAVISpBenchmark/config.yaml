@@ -1,44 +1,115 @@
 modes:
-  <mode_name>:               #  "simple" or "ensemble
-    experimental_column: "experimental data column"
-    experimental_column_classification: "experimental classification column"
-    experimental_thresholds: []  # not need in case of classification in experimental_column leave it empty
+  simple:
+    score_classifications:
+      GEMME:
+        column: GEMME Score
+        output_column: GEMME classification
+        damaging_threshold: -3.0
+        direction: lower
+        otherwise_class: Neutral
+        missing_class: Uncertain
+      DeMaSk:
+        column: DeMaSk delta fitness
+        output_column: DeMaSk classification
+        damaging_threshold: -0.25
+        direction: lower
+        otherwise_class: Neutral
+        missing_class: Uncertain
+    experimental_column: Experimental data (DHFR-PCA yeast, Stability (MAVEdb))
+    experimental_column_classification: Experimental data classification (DHFR-PCA yeast, Stability (MAVEdb))
+    experimental_thresholds:
+    - -1
+    - -0.161
+    - 1
     normalization:
-      Damaging: # all labels considered "Damaging"
-        - "Damaging"
-        - "damaging"
-        - "Destabilizing"
-        - "destabilizing"
-        - "pathogenic"
-        - "Pathogenic"
-      Neutral: # all labels considered "Neutral"
-        - "Neutral"
-        - "neutral"
-        - "Benign"
-        - "benign"
-        - "stabilizing"
-        - "Stabilizing"
-      Uncertain: # all labels considered "Uncertain"
-        - "Uncertain"
-        - "uncertain"
+      Damaging:
+      - Damaging
+      - damaging
+      - Destabilizing
+      - destabilizing
+      - pathogenic
+      - Pathogenic
+      - mixed_effects
+      Neutral:
+      - Neutral
+      - neutral
+      - Benign
+      - benign
+      - stabilizing
+      - Stabilizing
+      Uncertain:
+      - Uncertain
+      - uncertain
     comparisons:
-      - name: "name_of_the_combined_column"
-        columns: ["column_name_1","column_name_2","column_name_3"..]
-        priority:
-          class_order: ["Damaging", "Neutral", "Uncertain"]
-          priority_for_classification:
-            Damaging: ["column_name_1","column_name_2"..]   # columns used to classify Damaging
-            Neutral: ["column_name_1","column_name_2"..]    # columns used to classify Neutral
-            Uncertain: ["column_name_1","column_name_2"..]  # columns used to classify Uncertain
-        weighted:                      # optional, if using weighted classification
-          weights:
-            <column_name>: <weight_value>
-            ...
-          threshold: <numeric_value>
-        voting:                        # optional, if using voting logic
-          target_class: <class_name>   # e.g., "Damaging"
-          logic: <string>              # e.g., "majority", "at_least_one" or "all"
-          fallback: <class_name>       # fallback class
-          handle_uncertain: <string>   # e.g., "return_uncertain",  "as_fallback"
-      - name: <comparison_name>
-        ...
+    - name: GEMME
+      columns:
+      - GEMME classification
+      priority:
+        class_order:
+        - Damaging
+        - Neutral
+        - Uncertain
+        priority_for_classification:
+          Damaging: &id001
+          - GEMME classification
+          Neutral: *id001
+          Uncertain: *id001
+    - name: DeMaSk
+      columns:
+      - DeMaSk classification
+      priority:
+        class_order:
+        - Damaging
+        - Neutral
+        - Uncertain
+        priority_for_classification:
+          Damaging: &id002
+          - DeMaSk classification
+          Neutral: *id002
+          Uncertain: *id002
+    - name: MAVISp_stability
+      columns:
+      - Stability classification, AFDB, (RaSP, FoldX)
+      priority:
+        class_order:
+        - Damaging
+        - Neutral
+        - Uncertain
+        priority_for_classification:
+          Damaging: &id003
+          - Stability classification, AFDB, (RaSP, FoldX)
+          Neutral: *id003
+          Uncertain: *id003
+    - name: MAVISp_combined
+      columns:
+      - Stability classification, AFDB, (RaSP, FoldX)
+      - Local Int. classification (PMS2_AFmulti)
+      - DeMaSk classification
+      priority:
+        class_order:
+        - Damaging
+        - Neutral
+        - Uncertain
+        priority_for_classification:
+          Damaging:
+          - Stability classification, AFDB, (RaSP, FoldX)
+          - Local Int. classification (PMS2_AFmulti)
+          Neutral:
+          - Stability classification, AFDB, (RaSP, FoldX)
+          - Local Int. classification (PMS2_AFmulti)
+          - DeMaSk classification
+          Uncertain:
+          - Stability classification, AFDB, (RaSP, FoldX)
+          - Local Int. classification (PMS2_AFmulti)
+          - DeMaSk classification
+      weighted:
+        weights:
+          Stability classification, AFDB, (RaSP, FoldX): 0.4
+          Local Int. classification (PMS2_AFmulti): 0.3
+          DeMaSk classification: 0.3
+        threshold: 0.5
+      voting:
+        target_class: Damaging
+        logic: at_least_one
+        fallback: Neutral
+        handle_uncertain: return_uncertain

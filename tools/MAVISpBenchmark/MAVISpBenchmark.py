@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import yaml
 from scipy.stats import pearsonr
 import seaborn as sn
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, matthews_corrcoef
 import numpy as np
 import warnings
 import matplotlib.patches as mpatches
@@ -82,6 +82,54 @@ def generate_confusion_matrix(df,
 
 
 import pandas as pd
+
+# Set once per analysis mode. Every configured predictor is assessed on the
+# same intersection of experimental variants with binary predictions.
+COMMON_VARIANT_MCC = {}
+COMMON_VARIANT_COUNT = 0
+
+
+def calculate_common_variant_metrics(df, config, comparison_map,
+                                     remove_positions=None, excluded_mutations=None):
+    """Compute paired MCC for every classification strategy in the YAML.
+
+    Intersect the *final* predictions, rather than their input features. This
+    preserves the existing voting, priority and weighted missing-data rules.
+    """
+    experimental = config["experimental_column_classification"]
+    # Only the final strategies listed under YAML comparisons contribute to
+    # the common intersection. Score classifiers used as inputs are not
+    # independent benchmark strategies unless also listed as comparisons.
+    columns = list(dict.fromkeys(column for methods in comparison_map.values()
+                                 for column in methods.values()))
+    if not columns:
+        raise ValueError("No prediction strategies available for common-variant MCC")
+
+    filtered = df.loc[df[experimental].isin(["Damaging", "Neutral"])].copy()
+    filtered = filtered.dropna(subset=[config["experimental_column"]])
+    if remove_positions:
+        excluded = set(remove_positions)
+        filtered = filtered.loc[~filtered.apply(
+            lambda row: (row["protein"], row["wt_res_position"]) in excluded, axis=1)]
+    for mutation in excluded_mutations or []:
+        filtered = remove_mutations(filtered, "Mut_res", mutation)
+    missing = [column for column in columns if column not in filtered.columns]
+    if missing:
+        raise ValueError(f"Missing configured classification columns: {missing}")
+    common = filtered.loc[filtered[columns].isin(["Damaging", "Neutral"]).all(axis=1)]
+    count = len(common)
+    if count == 0:
+        raise ValueError("No variants shared by all configured classification methods")
+    if common["Mutation"].duplicated().any():
+        raise ValueError("Duplicate mutation identifiers in common-variant benchmark")
+
+    y_true = common[experimental]
+    values = {column: (round(float(matthews_corrcoef(y_true, common[column])), 3)
+                       if y_true.nunique() == 2 and common[column].nunique() == 2
+                       else float("nan")) for column in columns}
+    # A single dataset size applies to *every* configured strategy.
+    return values, count, common[["Mutation", experimental] + columns]
+
 
 def metrics(array, 
             predictor_column, 
@@ -182,6 +230,8 @@ def metrics(array,
         "F1 score": F1_score,
         "MCC": mcc,
         "MCC_norm": mcc_norm,
+        "MCC_common": COMMON_VARIANT_MCC.get(predictor_column, np.nan),
+        "N_common": COMMON_VARIANT_COUNT,
         "dataset_size": dataset_size
     }
 
@@ -235,8 +285,8 @@ def plot_residue_mutation_distribution(df,
     plt.xlabel("Residue")
     plt.legend(title="Type", loc='center left', bbox_to_anchor=(1, 0.5))
     plt.tight_layout()
-    plt.savefig(f"{output_path}/divergent_classification_aminaocid_distribution.png", dpi=300)
-    plt.savefig(f"{output_path}/divergent_classification_aminaocid_distribution.pdf")
+    plt.savefig(f"{output_path}/amino_acid_distribution.png", dpi=300)
+    plt.savefig(f"{output_path}/amino_acid_distribution.pdf")
     plt.close()
 
     # --- Amino acid class plot ---
@@ -284,37 +334,37 @@ def plot_residue_mutation_distribution(df,
                loc='center left', bbox_to_anchor=(1, 0.5), frameon=False)
 
     plt.tight_layout()
-    plt.savefig(f"{output_path}/divergent_classification_aminoacid_class.png", dpi=300)
-    plt.savefig(f"{output_path}/divergent_classification_aminoacid_class.pdf")
+    plt.savefig(f"{output_path}/amino_acid_classes.png", dpi=300)
+    plt.savefig(f"{output_path}/amino_acid_classes.pdf")
     plt.close()
 
-def score_classification(df,column_name, new_column_name):
-    """
-    Adds a new classification column to the DataFrame based on the values of an existing column.
-
-    Parameters:
-    ----------
-    df : pandas.DataFrame
-        The original DataFrame.
-    column_name : str
-        The name of the column to use for classification.
-    new_column_name : str, optional
-        The name of the new classification column (default: 'classification').
-
-    Returns:
-    --------
-    pandas.DataFrame
-        The DataFrame with the new classification column added.
-    """
-    
-    
-    # Apply conditional function for the values classiifcation
-    if "GEMME" in column_name:
-        df[new_column_name] = df[column_name].apply(lambda x: 'Damaging' if x <= -3 or x >= 3 else 'Neutral')
-    if "DeMaSk" in column_name:
-        df[new_column_name] = df[column_name].apply(lambda x: 'Damaging' if x <= -0.25 or x >= 0.25 else 'Neutral')
-    
+def score_classification(df, predictor_config):
+    """YAML-configured numerical score to Damaging/Neutral/Uncertain classes."""
+    score_col = predictor_config['column']
+    output_col = predictor_config['output_column']
+    direction = predictor_config['direction']
+    values = pd.to_numeric(df[score_col], errors='coerce')
+    if direction in ('lower', 'higher'):
+        cutoff = float(predictor_config['damaging_threshold'])
+        mask = values <= cutoff if direction == 'lower' else values >= cutoff
+    elif direction in ('inside_range', 'outside_range'):
+        low = float(predictor_config['lower_threshold'])
+        high = float(predictor_config['upper_threshold'])
+        if low > high:
+            raise ValueError(f'Invalid score interval: {low} > {high}')
+        within = values.between(low, high, inclusive='both')
+        mask = within if direction == 'inside_range' else ((values <= low) | (values >= high))
+    else:
+        raise ValueError(f'Unsupported score direction: {direction}')
+    otherwise = predictor_config.get('otherwise_class', 'Neutral')
+    missing = predictor_config.get('missing_class', 'Uncertain')
+    df[output_col] = np.where(values.isna(), missing, np.where(mask, 'Damaging', otherwise))
     return df
+
+def configured_predictors(config):
+    predictors = config.get("score_classifications", {})
+    for predictor_name, predictor_config in predictors.items():
+        yield predictor_name, predictor_config["column"], predictor_config["output_column"]
 
 
 def plot_accessibility_kde(df, 
@@ -335,12 +385,12 @@ def plot_accessibility_kde(df,
     output_path : str
         Base path for saving the figure (PDF and PNG).
     """
-    if "divergent" in output_path:
-        output_file_name = "divergent_classification_accessibility"
-    else:
-        output_file_name = "concordant_classification_accessibility"
+    output_file_name = "solvent_accessibility"
     plt.figure(figsize=(12,6))
-    sn.kdeplot(df[col_name], fill=True, color="blue", alpha=0.5)
+    numeric = pd.to_numeric(df[col_name], errors='coerce').replace([np.inf,-np.inf],np.nan).dropna()
+    if len(numeric) < 3 or numeric.nunique() < 2:
+        return
+    sn.kdeplot(numeric, fill=True, color="blue", alpha=0.5)
     plt.axvline(threshold, color="red", linestyle="--", label=f"Threshold = {threshold}")
     plt.xlabel("Relative Side Chain Solvent Accessibility")
     plt.ylabel("Density")
@@ -381,11 +431,16 @@ def scatter_plot(df, variant_predictor_column, experiment_column, mavisp_column,
         png and pdf files of the plots
     """
 
-    # Create the scatter plot
+    # Keep only finite numerical pairs before correlation and regression.
+    df = df.copy()
+    df[variant_predictor_column] = pd.to_numeric(df[variant_predictor_column], errors="coerce")
+    df[experiment_column] = pd.to_numeric(df[experiment_column], errors="coerce")
+    df = df.replace([np.inf, -np.inf], np.nan).dropna(subset=[variant_predictor_column, experiment_column])
+    if len(df) < 2 or df[variant_predictor_column].nunique() < 2:
+        print(f"Skipping scatter plot for {variant_predictor_column}: insufficient finite data")
+        return
+
     plt.figure(figsize=(12, 6))
-
-    #df = df.replace([np.inf, -np.inf], np.nan).dropna(subset=[prediction_column, experiment_column])
-
     df[mavisp_column] = df[mavisp_column].astype(str)
 
     # Check if color mapping is provided
@@ -792,6 +847,27 @@ def validate_yaml(config, input_flags):
         if not isinstance(thresholds, list):
             raise ValueError(f"'{mode_name}' mode: experimental_thresholds must be a list of numeric values.")
 
+        # --- Continuous score classification --- #
+        for key, spec in cfg.get('score_classifications', {}).items():
+            for field in ('column', 'output_column', 'direction'):
+                if field not in spec:
+                    raise ValueError(f'Score classifier {key} missing {field}')
+            direction = spec['direction']
+            if direction in ('lower', 'higher'):
+                if 'damaging_threshold' not in spec:
+                    raise ValueError(f'Score classifier {key} needs damaging_threshold')
+                float(spec['damaging_threshold'])
+            elif direction in ('inside_range', 'outside_range'):
+                if not {'lower_threshold', 'upper_threshold'} <= spec.keys():
+                    raise ValueError(f'Score classifier {key} needs lower_threshold and upper_threshold')
+                if float(spec['lower_threshold']) > float(spec['upper_threshold']):
+                    raise ValueError(f'Score classifier {key} has reversed thresholds')
+            else:
+                raise ValueError(f'Score classifier {key} has invalid direction {direction!r}')
+            for fld in ('otherwise_class', 'missing_class'):
+                if spec.get(fld, 'Neutral' if fld == 'otherwise_class' else 'Uncertain') not in ('Damaging','Neutral','Uncertain'):
+                    raise ValueError(f'Score classifier {key}: invalid {fld}')
+
         # --- Comparisons section --- #
         if "comparisons" not in cfg:
             raise ValueError(f"YAML '{mode_name}' mode must contain 'comparisons' section.")
@@ -802,6 +878,10 @@ def validate_yaml(config, input_flags):
             if "columns" not in comp or not isinstance(comp["columns"], list):
                 raise ValueError(f"Comparison {comp.get('name')} must have a list of 'columns'.")
 
+            if not any(key in comp for key in ('priority', 'voting', 'weighted')):
+                raise ValueError(f"Comparison {comp['name']} needs priority, voting, and/or weighted")
+            if not comp['columns']:
+                raise ValueError(f"Comparison {comp['name']} has no columns")
             # Validate voting logic
             if "voting" in comp:
                 voting = comp["voting"]
@@ -890,17 +970,6 @@ def validate_csv_columns(df, config):
     if missing_cols:
         raise ValueError(f"The following columns are missing in CSV: {', '.join(missing_cols)}")
     
-    # --- Extra check: scatter flag requires numeric experimental column --- #
-    if args and getattr(args, "scatter", False):
-        exp_col = config.get("experimental_column")
-        if exp_col and exp_col in df.columns:
-            try:
-                pd.to_numeric(df[exp_col], errors="raise")
-            except Exception:
-                raise ValueError(
-                    f"--scatter flag specified but the experimental column '{exp_col}' "
-                    f"contains non-numeric values (e.g., strings)."
-                )
 
 # ---------------------------
 # Modified main function with validation
@@ -928,20 +997,18 @@ def process_input_files(config, selected_mode):
             continue
 
         protein_name = m.groups()[0]
-        df = pd.read_csv(csv_file)
+        df = pd.read_csv(csv_file, low_memory=False)
         df.insert(0, "protein", protein_name)
 
         # Extract mutation info
         df["Mut_res"] = df["Mutation"].str[-1]
         df["wt_res_position"] = df["Mutation"].str[:-1]
         df["Position"] = df["Mutation"].str[1:-1].astype(int)
-        # Apply score classification for GEMME and DeMaSk if columns exist
-        for column_name, new_column_name in zip(
-            ["GEMME Score", "DeMaSk delta fitness"],
-            ["GEMME classification", "DeMaSk classification"]
-        ):
-            if column_name in df.columns:
-                df = score_classification(df, column_name, new_column_name)
+        # Classify evolutionary predictors using rules from config.yaml.
+        for predictor_name, predictor_config in config.get("score_classifications", {}).items():
+            if predictor_config["column"] not in df.columns:
+                raise ValueError(f"Missing {predictor_config['column']} for {predictor_name} in {csv_file}")
+            df = score_classification(df, predictor_config)
 
         # Validate that all required columns exist
         try:
@@ -1038,198 +1105,114 @@ def get_comparison_map(df, config):
     return comparison_map
 
 
-def run_full_analysis(df_confusion_matrix, config, args, selected_mode,remove_positions=None,mutations_to_be_excluded = None):
-    """
-    Run the full analysis pipeline:
-    1. Independent GEMME/DeMaSK analysis
-    2. Filtered dataset analysis for YAML-specified columns
-    3. Generate confusion matrices, scatter plots, and histogram plots
-    """
+def run_full_analysis(df_confusion_matrix, config, args, selected_mode,
+                      remove_positions=None, mutations_to_be_excluded=None):
+    """Run a uniform benchmark for each YAML comparison and classification logic."""
+    from pathlib import Path
+    base = Path('output') / selected_mode
+    base.mkdir(parents=True, exist_ok=True)
+    exp = config['experimental_column']
+    gold = config['experimental_column_classification']
+    filtered = df_confusion_matrix.loc[
+        df_confusion_matrix[gold].isin(['Damaging', 'Neutral'])
+        & df_confusion_matrix[exp].notna()
+    ].copy()
+    if remove_positions:
+        forbidden = set(remove_positions)
+        filtered = filtered.loc[~filtered.apply(
+            lambda row: (row['protein'], row['wt_res_position']) in forbidden, axis=1)].copy()
+    for mutation in mutations_to_be_excluded or []:
+        filtered = remove_mutations(filtered, 'Mut_res', mutation)
+    comparison_map = get_comparison_map(filtered, config)
+    global COMMON_VARIANT_MCC, COMMON_VARIANT_COUNT
+    COMMON_VARIANT_MCC, COMMON_VARIANT_COUNT, common_data = calculate_common_variant_metrics(
+        filtered, config, comparison_map)
+    common_data.to_csv(base / 'common_variants.csv', index=False)
+    print(f'Common-variant benchmark: {COMMON_VARIANT_COUNT} variants, '
+          f'{len(COMMON_VARIANT_MCC)} methods', flush=True)
 
-    experiment_column = config["experimental_column"]
-    experiment_column_classification = config["experimental_column_classification"]
-    experimental_thresholds = config["experimental_thresholds"]
-
-    comparison_map = get_comparison_map(df_confusion_matrix,config)
-
-
-    df_confusion_matrix = df_confusion_matrix.dropna(subset=[experiment_column])
-    df_confusion_matrix = df_confusion_matrix.loc[df_confusion_matrix[experiment_column_classification].isin(['Damaging', 'Neutral'])]
-
-    # ------------------------------
-    # GEMME and DeMaSK independent analysis
-    # ------------------------------
-    for predictior_column_score, predictor_column_classification in zip(
-        ["GEMME Score", "DeMaSk delta fitness"],
-        ["GEMME classification", "DeMaSk classification"]
-    ):
-        predictor = predictior_column_score.split(" ")[0]
-        output_path = f"output/{selected_mode}/{predictor}_comparison/confusion_matrix"
-        os.makedirs(output_path, exist_ok=True)
-
-        df_pred = df_confusion_matrix.loc[
-            df_confusion_matrix[predictor_column_classification].isin(["Damaging", "Neutral"])
-        ]
-
-        labels = ["Damaging", "Neutral"]
-        cm = generate_confusion_matrix(df_pred, experiment_column_classification, predictor_column_classification)
-        plot_confusion_matrix(cm, predictor_column_classification, experiment_column_classification, output_path, args.colormap, labels=labels)
-        metrics(cm, predictor_column_classification, experiment_column, output_path)
-        df_pred = df_pred[["Mutation",predictior_column_score,predictor_column_classification,experiment_column,experiment_column_classification]]
-        df_pred.to_csv(f"{output_path}/confusion_matrix_data.csv",sep=",",index=False)
-
-        if args.scatter:
-            for comp, logics in comparison_map.items():
-                for logic, comp_col in logics.items():
-                    scatter_path = f"output/{selected_mode}/{predictor}_comparison/scatter_plots/{comp}/{logic}"
-                    os.makedirs(scatter_path, exist_ok=True)
-                    # ------------------- Confusion matrices and scatter plots -------------------
-                    df_comp_col = df_confusion_matrix.loc[df_confusion_matrix[comp_col].isin(['Damaging','Neutral'])].copy()
-                    # Confusion matrix vs experiment
-                    df_comp_col.to_csv(f"{scatter_path}/scatter_plot_data.csv", sep=",", index=False)
-                    scatter_plot(df_comp_col, predictior_column_score, experiment_column, comp_col, scatter_path)
-
-
-    # ------------------------------
-    # YAML-specified columns analysis
-    # ------------------------------
+    summary = []
+    # Only configured strategies are benchmarked, including one-column predictors.
     for comp, logics in comparison_map.items():
-        for logic, comp_col in logics.items():
-            comp_output = f"output/{selected_mode}/{comp}_comparison/{logic}"
-            os.makedirs(comp_output, exist_ok=True)
+        for logic, prediction in logics.items():
+            folder = base / comp / logic
+            folder.mkdir(parents=True, exist_ok=True)
+            df_pred = filtered.loc[filtered[prediction].isin(['Damaging', 'Neutral'])].copy()
+            cm_folder = folder / 'confusion_matrix'
+            cm_folder.mkdir(exist_ok=True)
+            matrix = confusion_matrix(df_pred[gold], df_pred[prediction],
+                                      labels=['Damaging', 'Neutral'])
+            result = metrics(matrix, prediction, exp, str(folder))
+            result_row = dict(result)
+            result_row.update(comparison=comp, strategy=logic)
+            summary.append(result_row)
+            df_pred.to_csv(cm_folder / 'confusion_matrix_data.csv', index=False)
+            if not args.no_plots:
+                plot_confusion_matrix(matrix, prediction, gold, str(cm_folder), args.colormap)
 
-            # ------------------------------
-            # Filter dataset according to user specifications
-            # ------------------------------
-
-            # Remove positions specified in prot_pos_to_remove
-            if args.residues_to_exclude:
-                for p, pos in remove_positions:
-                    if not ((df_confusion_matrix["protein"] == p) & (df_confusion_matrix["wt_res_position"] == pos)).any():
-                        print(f"Position {pos} in {p} not found in DataFrame")
-                mask = df_confusion_matrix.apply(lambda row: (row["protein"], row["wt_res_position"]) in remove_positions, axis=1)
-                df_confusion_matrix = df_confusion_matrix[~mask]
-
-            # ------------------- Confusion matrices and scatter plots -------------------
-            data_for_histogram_plot = {}
-            df_confusion_matrix_plot = df_confusion_matrix.copy()
-            # Remove Glycine/Proline if requested
-            for mut in mutations_to_be_excluded:
-                df_confusion_matrix_plot = remove_mutations(df_confusion_matrix_plot, "Mut_res", mut)
-            df_confusion_matrix_plot = df_confusion_matrix_plot.loc[df_confusion_matrix_plot[comp_col].isin(['Damaging','Neutral'])].copy()
-            # Confusion matrix vs experiment
-            cm_path = f"{comp_output}/confusion_matrix/"
-            os.makedirs(cm_path, exist_ok=True)
-            cm = generate_confusion_matrix(df_confusion_matrix_plot, experiment_column_classification, comp_col)
-            plot_confusion_matrix(cm, comp_col, experiment_column_classification, cm_path, args.colormap)
-            performances = metrics(cm, comp_col, experiment_column, cm_path)
-            data_for_histogram_plot[comp_col] = performances
-            divergent_classification = filter_different_rows(df_confusion_matrix_plot, 
-                                                            comp_col, 
-                                                            experiment_column_classification)
-            # divergent classification analysis
-            divergent_classification_analysis_path = f"{cm_path}/divergent_classification_analysis"
-            divergent_classification_neutral_path = f"{divergent_classification_analysis_path}/discordant_neutral"
-            divergent_classification_damaging_path = f"{divergent_classification_analysis_path}/discordant_damaging"
-            os.makedirs(divergent_classification_neutral_path, exist_ok=True)
-            os.makedirs(divergent_classification_damaging_path, exist_ok=True)
-            divergent_classification.to_csv(f"{divergent_classification_analysis_path}/divergent_classification.csv",sep=",")
-            plot_distribution_with_highlighted_mutations(df_confusion_matrix_plot, 
-                                                        experiment_column, 
-                                                        comp_col, 
-                                                        divergent_classification["Mutation"].tolist(), 
-                                                        divergent_classification_analysis_path, 
-                                                        experimental_thresholds = experimental_thresholds)
-            divergent_classification_neutral = divergent_classification.loc[divergent_classification[comp_col] == "Neutral"]
-            divergent_classification_damging = divergent_classification.loc[divergent_classification[comp_col] == "Damaging"]
-            # =============================
-            # Concordant classification
-            # =============================
-            concordant_classification = df_confusion_matrix_plot.loc[
-                df_confusion_matrix_plot[comp_col] ==
-                df_confusion_matrix_plot[experiment_column_classification]
-            ].copy()
-
-            concordant_path = f"{cm_path}/concordant_classification_analysis"
-            neutral_conc_path = f"{concordant_path}/concordant_neutral"
-            damaging_conc_path = f"{concordant_path}/concordant_damaging"
-
-            os.makedirs(neutral_conc_path, exist_ok=True)
-            os.makedirs(damaging_conc_path, exist_ok=True)
-
-            concordant_classification.to_csv(
-                f"{concordant_path}/concordant_classification.csv", index=False
-            )
-
-            concordant_neutral = concordant_classification.loc[
-                concordant_classification[comp_col] == "Neutral"
-            ]
-
-            concordant_damaging = concordant_classification.loc[
-                concordant_classification[comp_col] == "Damaging"
-            ]
-            # =============================
-            # Plot settings
-            # =============================
-            if selected_mode == "simple":
-                accessibility_column = "Relative Side Chain Solvent Accessibility in wild-type"
-            else:
-                accessibility_column = "Relative Side Chain Solvent Accessibility in wild-type (average) [md]"
-            # =============================
-            # Plot ALL groups
-            # =============================
-            plot_groups = [
-                (divergent_classification_neutral, divergent_classification_neutral_path, "discordant_neutral"),
-                (divergent_classification_damging, divergent_classification_damaging_path, "discordant_damaging"),
-                (concordant_neutral, neutral_conc_path, "concordant_neutral"),
-                (concordant_damaging, damaging_conc_path, "concordant_damaging"),
-            ]
-
-            for df_group, output_path, label in plot_groups:
-
-                if df_group.empty:
-                    print(f"⚠️ Skipping {label}: no data")
+            agreement = folder / 'classification_agreement'
+            kinds = {
+                'concordant/true_positive': ('Damaging', 'Damaging'),
+                'concordant/true_negative': ('Neutral', 'Neutral'),
+                'discordant/false_positive': ('Neutral', 'Damaging'),
+                'discordant/false_negative': ('Damaging', 'Neutral'),
+            }
+            access = ('Relative Side Chain Solvent Accessibility in wild-type' if selected_mode=='simple'
+                      else 'Relative Side Chain Solvent Accessibility in wild-type (average) [md]')
+            for rel, (truth, predicted) in kinds.items():
+                path = agreement / rel
+                path.mkdir(parents=True, exist_ok=True)
+                subset = df_pred.loc[(df_pred[gold] == truth) & (df_pred[prediction] == predicted)].copy()
+                subset.to_csv(path / 'variants.csv', index=False)
+                if args.no_plots or subset.empty:
                     continue
+                if access in subset.columns:
+                    plot_accessibility_kde(subset, access, 20, str(path))
+                plot_residue_mutation_distribution(subset, 'Mut_res', 'wt_res_position', str(path))
+            # Experimental distribution highlighting incorrect predictions
+            if not args.no_plots and pd.api.types.is_numeric_dtype(pd.to_numeric(filtered[exp], errors='coerce')):
+                discordant = df_pred[df_pred[gold] != df_pred[prediction]]
+                # This plotting helper requires a varying experimental score.
+                if pd.to_numeric(df_pred[exp], errors='coerce').nunique() > 1:
+                    plot_distribution_with_highlighted_mutations(
+                        df_pred, exp, prediction, discordant['Mutation'].tolist(),
+                        str(agreement / 'discordant'), config.get('experimental_thresholds', []))
 
-                plot_accessibility_kde(
-                    df_group,
-                    accessibility_column,
-                    20,
-                    output_path
-                )
+            # Scatter plots: only numerical raw score columns in score_classifications.
+            if not args.no_plots:
+                for predictor, spec in config.get('score_classifications', {}).items():
+                    score = spec['column']
+                    raw = df_pred.copy()
+                    raw[score] = pd.to_numeric(raw[score], errors='coerce')
+                    raw[exp] = pd.to_numeric(raw[exp], errors='coerce')
+                    raw = raw.dropna(subset=[score, exp])
+                    if len(raw) < 3 or raw[score].nunique() < 2 or raw[exp].nunique() < 2:
+                        continue
+                    scatter_path = folder / 'scatter_plot' / predictor
+                    scatter_path.mkdir(parents=True, exist_ok=True)
+                    raw.to_csv(scatter_path / 'scatter_plot_data.csv', index=False)
+                    scatter_plot(raw, score, exp, prediction, str(scatter_path))
 
-                plot_residue_mutation_distribution(
-                    df_group,
-                    "Mut_res",
-                    "wt_res_position",
-                    output_path
-                )
-
-                df_group.to_csv(
-                    f"{output_path}/{label}.csv",
-                    index=False
-                )
-            # save in csv format the data used for the confusion matrix
-            df_confusion_matrix_data = df_confusion_matrix_plot[["Mutation",comp_col,experiment_column,experiment_column_classification]]
-            df_confusion_matrix_data.to_csv(f"{cm_path}/confusion_matrix_data.csv",sep=",",index=False)
-
-            # -- confusion matrixes of impact variant predictors for comparison with stability data -- #
-
-            for predictor_column_score, predictor_column_classification in zip(["GEMME Score", "DeMaSk delta fitness"],["GEMME classification", "DeMaSk classification"]):
-                predictor = predictor_column_score.split(" ")[0]
-                comp_predictor_path = f"{cm_path}/predictors_confusion_matrices_for_comparison/{predictor}"
-                os.makedirs(comp_predictor_path, exist_ok=True)
-                cm = generate_confusion_matrix(df_confusion_matrix_plot,experiment_column_classification,predictor_column_classification)
-                plot_confusion_matrix(cm,predictor_column_classification,experiment_column_classification,comp_predictor_path,args.colormap)
-                performances = metrics(cm,predictor_column_classification,experiment_column,comp_predictor_path)
-                data_for_histogram_plot[predictor] = performances
-
-                df_confusion_matrix_data = df_confusion_matrix_plot[["Mutation",predictor_column_score,predictor_column_classification,experiment_column,experiment_column_classification]]
-                df_confusion_matrix_data.to_csv(f"{comp_predictor_path}/confusion_matrix_data.csv",sep=",",index=False)
-
-            df_for_histogram_plot = df_for_histogram_plot_creation(data_for_histogram_plot)
-            performance_histogram_plot(df_for_histogram_plot,cm_path,args.colormap)
-
+    summary_df = pd.DataFrame(summary)
+    summary_df.to_csv(base / 'performance_summary.csv', index=False)
+    if not args.no_plots and not summary_df.empty:
+        metrics_to_plot = ['sensitivity', 'specificity', 'accuracy', 'precision', 'F1 score', 'MCC', 'MCC_common']
+        df_plot = summary_df[['comparison','strategy'] + metrics_to_plot].copy()
+        df_plot['method'] = df_plot['comparison'] + ' (' + df_plot['strategy'] + ')'
+        df_plot = df_plot.set_index('method')[metrics_to_plot].apply(pd.to_numeric, errors='coerce')
+        fig, ax = plt.subplots(figsize=(max(9, len(df_plot)*1.1), 6))
+        x = np.arange(len(df_plot))
+        width = 0.11
+        for i, metric in enumerate(metrics_to_plot):
+            ax.bar(x + (i-3)*width, df_plot[metric], width, label=metric)
+        ax.set_xticks(x)
+        ax.set_xticklabels(df_plot.index, rotation=45, ha='right')
+        ax.set_ylabel('Score')
+        ax.set_ylim(-1,1)
+        ax.legend(loc='upper left', bbox_to_anchor=(1,1))
+        fig.tight_layout()
+        fig.savefig(base / 'performance_comparison.png', dpi=150)
+        plt.close(fig)
 
 def main():
     global GLOBAL_DATASET_SIZE
@@ -1255,7 +1238,7 @@ def main():
         errors = position_to_remove[~position_to_remove["valid"]]
 
         if not errors.empty:
-            print(f"The file {args.residues_to_exclude} contain position\s in the wrong" \
+            print(f"The file {args.residues_to_exclude} contain positions in the wrong" \
                 f" format:")
             print(errors[["protein", "position"]].to_string(index=False))
             exit(1)
@@ -1332,6 +1315,9 @@ parser.add_argument("-y","--config_yaml",
                        help="config file with the columns to plot")
 
 
+parser.add_argument('--no-plots', action='store_true', default=False,
+                    help='Generate all CSV benchmark results without rendering figures (useful for tests).')
+
 parser.add_argument("-rg","--remove_glycine",
                        dest="no_glycine", 
                        action="store_true",
@@ -1366,9 +1352,7 @@ parser.add_argument("-sp","--scatter_plot",
                        action = "store_true",
                        required = False, 
                        default = False,
-                       help = "Include a scatter plot of the experimental data,"\
-                              " in which the threshold that defines the "\
-                              "classifications is highlighted.")
+                       help = "Legacy compatibility flag. Scatter plots are generated automatically for numerical score columns in score_classifications.")
 
 
 parser.add_argument("-c", "--colormap", 

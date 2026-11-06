@@ -1,2 +1,4 @@
-The folder contains scripts for generating a test dataset (test-simple_mode.csv) that can be used to verify the classification logic defined in the config file.
-Please update the config file with the desired classifications and then run:
+The folder contains an example of MAVISpBenchmark.py and a test_logic folder with an analysis designed to test the classification logic.
+For the test_logic folder, please follow the instructions in the README inside the folder.
+To run the example:
+bash run.sh
