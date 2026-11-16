@@ -106,7 +106,7 @@ This avoids repeated web queries and prevents the large *Homo_sapiens.owl* model
 
 ---
 ### 2. Retrieve Reactome pathways
-NORMAL reaction discovery starts from UniProt2Reactome_PE_Reactions.txt, while DISEASE reaction discovery starts independently from disease_variant_ewas_mapping.tsv. For every event, pathway context is reconstructed from the local Homo_sapiens.owl model. LocalReactomeDatabase indexes Reactome pathways and parent relationships and EventContextBuilder derives the pathway chains associated with each event. This allows the final output to report not only the specific low-level pathway containing a reaction, but also the broader pathway hierarchy in which that reaction occurs. NORMAL and DISEASE contexts remain independent even when they refer to related normal/disease biological processes.
+NORMAL reaction discovery starts from *UniProt2Reactome_PE_Reactions.txt*, while DISEASE reaction discovery starts independently from *disease_variant_ewas_mapping.tsv*. For every event, pathway context is reconstructed from the local *Homo_sapiens.owl* model. LocalReactomeDatabase indexes Reactome pathways and parent relationships and EventContextBuilder derives the pathway chains associated with each event. This allows the final output to report not only the specific low-level pathway containing a reaction, but also the broader pathway hierarchy in which that reaction occurs. NORMAL and DISEASE contexts remain independent even when they refer to related normal/disease biological processes.
 
 ---
 ### 3. Optional pathway ordering
