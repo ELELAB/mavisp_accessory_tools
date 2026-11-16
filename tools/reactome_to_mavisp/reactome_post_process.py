@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import re
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -116,6 +117,74 @@ def harmonize_target_columns(
         df["target_name"] = ""
 
     return df
+
+
+def accession_matches_target(value: object, target: object) -> bool:
+    """Match a UniProt accession or a serialized collection of accessions."""
+    if pd.isna(target) or pd.isna(value):
+        return False
+
+    target_ac = str(target).strip()
+    if not target_ac:
+        return False
+
+    raw = str(value).strip()
+    if not raw:
+        return False
+
+    try:
+        parsed = ast.literal_eval(raw)
+    except (ValueError, SyntaxError):
+        parsed = raw
+
+    if isinstance(parsed, (list, tuple, set)):
+        return target_ac in {str(ac).strip() for ac in parsed}
+    return str(parsed).strip() == target_ac
+
+
+def filter_rows_for_input_protein(df: pd.DataFrame) -> pd.DataFrame:
+    """Retain only entities/variants belonging to the input UniProt target.
+
+    The ``protein`` display name can contain a variant from another protein
+    even when ``mutation`` and ``variant_uniprot_ac`` are empty. Therefore
+    matching only ``variant_uniprot_ac`` would not remove those false hits.
+    """
+    required = {"target_uniprot_ac", "uniprot_ac"}
+    if not required.issubset(df.columns):
+        raise ValueError(
+            "Cannot filter target-specific variants: missing columns "
+            + ", ".join(sorted(required.difference(df.columns)))
+        )
+
+    entity_match = df.apply(
+        lambda row: accession_matches_target(
+            row["uniprot_ac"], row["target_uniprot_ac"]
+        ), axis=1
+    )
+
+    # Additional safeguard for disease variant annotations. Missing variant
+    # accession is allowed only when the row's entity itself matches target.
+    if "variant_uniprot_ac" in df.columns:
+        variant_match = df.apply(
+            lambda row: (
+                pd.isna(row["variant_uniprot_ac"])
+                or str(row["variant_uniprot_ac"]).strip() == ""
+                or accession_matches_target(
+                    row["variant_uniprot_ac"], row["target_uniprot_ac"]
+                )
+            ), axis=1
+        )
+        keep = entity_match & variant_match
+    else:
+        keep = entity_match
+
+    result = df.loc[keep].copy()
+    print(
+        "[INFO] Target UniProt filtering: "
+        f"kept {len(result)}/{len(df)} rows; excluded {len(df) - len(result)} "
+        "rows associated with other proteins."
+    )
+    return result
 
 
 def load_result_files(result_files: List[Path]) -> pd.DataFrame:
@@ -632,6 +701,8 @@ def main() -> None:
 
     if "highest_pathway" not in concatenated_df.columns:
         raise ValueError("Missing required column: highest_pathway")
+
+    concatenated_df = filter_rows_for_input_protein(concatenated_df)
 
     write_outputs(
         concatenated_df=concatenated_df,
