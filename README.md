@@ -98,7 +98,8 @@ Before running the per-target analysis, reactome_to_mavisp.py validates the thre
 - reactome_data/UniProt2Reactome_PE_Reactions.txt
 - reactome_data/Homo_sapiens.owl
 - reactome_data/disease_variant_ewas_mapping.tsv
-- UniProt2Reactome_PE_Reactions.txt is filtered to human entries and indexed as UniProt accession → Reactome reaction IDs. disease_variant_ewas_mapping.tsv is independently indexed as UniProt accession → disease reaction IDs and reaction ID → disease-variant records.
+
+UniProt2Reactome_PE_Reactions.txt is filtered to human entries and indexed as UniProt accession → Reactome reaction IDs. disease_variant_ewas_mapping.tsv is independently indexed as UniProt accession → disease reaction IDs and reaction ID → disease-variant records.
 
 The local BioPAX model is loaded once and shared across all input targets. A target can therefore produce output through NORMAL events, DISEASE events, or both. If neither branch produces any valid local Reactome event/output, the accession is written to *entries_not_in_reactome.csv* with the status "no_valid_reactome_output".
 This avoids repeated web queries and prevents the large *Homo_sapiens.owl* model from being reloaded for every UniProt accession.
