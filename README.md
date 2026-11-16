@@ -220,15 +220,15 @@ The final result.csv therefore contains both NORMAL and DISEASE event contexts. 
 
 After running the main workflow for multiple UniProt accessions, the optional script reactome_post_process.py merges individual result.csv files, harmonizes target columns when needed, removes duplicate summary rows, writes three post-processed CSV files, and generates two PDF plots:
 
-*merged_reaction.csv* contains a compact reaction-level summary across all analysed UniProt accessions. It keeps the target accession, target name, highest pathway, disease annotation, dynamic intermediate pathway hierarchy, lowest-level pathway, reaction name, reaction ID, left/right participants, and reaction direction.
+- *merged_reaction.csv* contains a compact reaction-level summary across all analysed UniProt accessions. It keeps the target accession, target name, highest pathway, disease annotation, dynamic intermediate pathway hierarchy, lowest-level pathway, reaction name, reaction ID, left/right participants, and reaction direction.
 
-*merged_highest_pathways.csv* contains a simplified pathway-level summary. It reports the highest-level Reactome pathways associated with each target protein, together with the corresponding Reactome pathway ID, UniProt accession, and target name.
+- *merged_highest_pathways.csv* contains a simplified pathway-level summary. It reports the highest-level Reactome pathways associated with each target protein, together with the corresponding Reactome pathway ID, UniProt accession, and target name.
 
-*disease_single_sequence_site.csv* contains a filtered subset of the concatenated results. It keeps only rows where highest_pathway == Disease and SequenceSite contains one numeric residue position.
+- *disease_single_sequence_site.csv* contains a filtered subset of the concatenated results. It keeps only rows where highest_pathway == Disease and SequenceSite contains one numeric residue position.
 
-*highest_pathways.pdf* shows a target × highest-pathway matrix. Duplicate target/pathway combinations are removed before plotting.
+- *highest_pathways.pdf* shows a target × highest-pathway matrix. Duplicate target/pathway combinations are removed before plotting.
 
-*disease_targets.pdf* shows target × disease associations. functional_status values are summarized as loss of function, gain of function, mixed, or unknown. Rows without a disease_name, including non-mutant partners of DISEASE reactions, are not plotted.
+- *disease_targets.pdf* shows target × disease associations. functional_status values are summarized as loss of function, gain of function, mixed, or unknown. Rows without a disease_name, including non-mutant partners of DISEASE reactions, are not plotted.
 
 ---
 ## Input
@@ -255,7 +255,7 @@ Q8N726
 Q9Y2X3
 ```
 
-Input for reactome_post_process.py script:
+Input for *reactome_post_process.py* script:
 
 Arguments:
 
@@ -359,7 +359,7 @@ For disease variants associated with more than one disease, the workflow writes 
 ### skipped_reactions.csv
 The current fully local workflow does not generate *skipped_reactions.csv*.
 The previous web-service-based implementation used this file to record reactions that failed online metadata/BioPAX retrieval. In the current implementation, reaction/event discovery and BioPAX annotation are obtained from the validated local Reactome release, so those retry-based skip categories are no longer part of the workflow.
-If a target produces no valid NORMAL or DISEASE output after local processing, the target is instead recorded at the global level in entries_not_in_reactome.csv.
+If a target produces no valid NORMAL or DISEASE output after local processing, the target is instead recorded at the global level in *entries_not_in_reactome.csv*.
 
 ### entries_not_in_reactome.csv
 This file is written at the global output-directory level when at least one input accession does not produce a valid output.
