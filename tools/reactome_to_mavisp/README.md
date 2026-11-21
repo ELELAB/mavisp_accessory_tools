@@ -1,6 +1,5 @@
 # Reactome UniProt Reaction Workflow
 This pipeline runs an automated Reactome analysis for one or more UniProt accessions. For each target protein, the workflow uses a local Reactome release to retrieve NORMAL and DISEASE events, reconstruct pathway context and ordering from BioPAX, extract reaction/protein/complex/disease-variant annotations, and write cleaned CSV outputs in MAVISp-supported format for downstream analysis.
-
 The code is organized as a small Python package. The command-line entry point is reactome_to_mavisp.py, while the core logic is split across the reactome_pipeline/ modules.
 
 ---
@@ -9,22 +8,16 @@ The code is organized as a small Python package. The command-line entry point is
 Python >= 3.8
 
 ### Python packages
-Required packages:
 
-pybiopax
-
-pandas
-
-numpy
-
-networkx
-
-requests
-
-matplotlib
+- Required packages:
+- pybiopax
+- pandas
+- numpy
+- networkx
+- requests
+- matplotlib
 
 The workflow also uses standard-library modules such as argparse, os, shutil, re, json, zipfile, urllib.request, datetime, collections, pathlib, and typing.
-
 Example installation:
 
 ```bash
@@ -102,81 +95,41 @@ For each UniProt accession, the workflow performs the following steps.
 ### 1. Initial Reactome mapping check
 Before running the per-target analysis, reactome_to_mavisp.py validates the three required local Reactome files:
 
-reactome_data/UniProt2Reactome_PE_Reactions.txt
-
-reactome_data/Homo_sapiens.owl
-
-reactome_data/disease_variant_ewas_mapping.tsv
+- reactome_data/UniProt2Reactome_PE_Reactions.txt
+- reactome_data/Homo_sapiens.owl
+- reactome_data/disease_variant_ewas_mapping.tsv
 
 UniProt2Reactome_PE_Reactions.txt is filtered to human entries and indexed as UniProt accession → Reactome reaction IDs. disease_variant_ewas_mapping.tsv is independently indexed as UniProt accession → disease reaction IDs and reaction ID → disease-variant records.
 
-The local BioPAX model is loaded once and shared across all input targets.
-
-A target can therefore produce output through NORMAL events, DISEASE events, or both.
-
-If neither branch produces any valid local Reactome event/output, the accession is written to:
-
-entries_not_in_reactome.csv
-
-with the status:
-
-no_valid_reactome_output
-
-This avoids repeated web queries and prevents the large Homo_sapiens.owl model from being reloaded for every UniProt accession.
+The local BioPAX model is loaded once and shared across all input targets. A target can therefore produce output through NORMAL events, DISEASE events, or both. If neither branch produces any valid local Reactome event/output, the accession is written to *entries_not_in_reactome.csv* with the status "no_valid_reactome_output".
+This avoids repeated web queries and prevents the large *Homo_sapiens.owl* model from being reloaded for every UniProt accession.
 
 ---
 ### 2. Retrieve Reactome pathways
-NORMAL reaction discovery starts from UniProt2Reactome_PE_Reactions.txt, while DISEASE reaction discovery starts independently from disease_variant_ewas_mapping.tsv.
-
-For every event, pathway context is reconstructed from the local Homo_sapiens.owl model. LocalReactomeDatabase indexes Reactome pathways and parent relationships and EventContextBuilder derives the pathway chains associated with each event.
-
-This allows the final output to report not only the specific low-level pathway containing a reaction, but also the broader pathway hierarchy in which that reaction occurs.
-
-NORMAL and DISEASE contexts remain independent even when they refer to related normal/disease biological processes.
+NORMAL reaction discovery starts from *UniProt2Reactome_PE_Reactions.txt*, while DISEASE reaction discovery starts independently from *disease_variant_ewas_mapping.tsv*. For every event, pathway context is reconstructed from the local *Homo_sapiens.owl* model. LocalReactomeDatabase indexes Reactome pathways and parent relationships and EventContextBuilder derives the pathway chains associated with each event. This allows the final output to report not only the specific low-level pathway containing a reaction, but also the broader pathway hierarchy in which that reaction occurs. NORMAL and DISEASE contexts remain independent even when they refer to related normal/disease biological processes.
 
 ---
 ### 3. Optional pathway ordering
 Unless --skip_pathway_order is used, the workflow attempts to infer the order of reactions within each lowest-level pathway.
-
 Ordering is reconstructed entirely from the local BioPAX model. For each pathway, LocalReactomeDatabase.get_pathway_reaction_order() uses explicit BioPAX PathwayStep relationships, including:
 
-reaction.step_process_of
+- reaction.step_process_of
+- PathwayStep.next_step
+- PathwayStep.next_step_of
+- PathwayStep.step_process
 
-PathwayStep.next_step
+These relationships are used to build a directed graph where nodes represent Reactome event stable IDs; edges represent explicit next/previous PathwayStep relationships; isolated reactions are retained as graph nodes; start/end nodes are defined from graph in-degree/out-degree; cycle membership is recorded; and non-redundant start-to-end paths are written to ordered_paths.csv when at least one linear path exists.
 
-PathwayStep.next_step_of
-
-PathwayStep.step_process
-
-These relationships are used to build a directed graph where:
-
-nodes represent Reactome event stable IDs;
-
-edges represent explicit next/previous PathwayStep relationships;
-
-isolated reactions are retained as graph nodes;
-
-start/end nodes are defined from graph in-degree/out-degree;
-
-cycle membership is recorded;
-
-non-redundant start-to-end paths are written to ordered_paths.csv when at least one linear path exists.
-
-When --skip_pathway_order is used, the workflow skips graph construction and still produces the main result.csv output with ordered=False.
+When --skip_pathway_order is used, the workflow skips graph construction and still produces the main *result.csv* output with ordered=False.
 
 ---
 ### 4. Resolve target information
-Before writing the final result, the workflow collects target-level information for the input UniProt accession. This is done in:
-
-ReactomeScript.resolve_target_information()
-
+Before writing the final result, the workflow collects target-level information for the input UniProt accession. This is done in ReactomeScript.resolve_target_information().
 Reactome event discovery remains fully local. The only target-level external lookup used by the current workflow is the existing UniProt helper used to obtain a readable protein name.
 
 The final target_name is selected using the following priority:
-
-protein name retrieved from UniProt;
-
-the original UniProt accession as fallback.
+- protein name retrieved from UniProt;
+- the original UniProt accession as fallback.
 
 The target information dictionary contains:
 
@@ -187,151 +140,95 @@ The target information dictionary contains:
 ---
 ### 5. Collect candidate reactions
 The current workflow discovers target events directly from the two local Reactome mappings.
-
 For NORMAL contexts:
-
-UniProt accession
+- UniProt accession
 
     -> UniProt2Reactome_PE_Reactions.txt
 
     -> NORMAL reaction IDs
-
+  
 For DISEASE contexts:
-
-UniProt accession
+- UniProt accession
 
     -> disease_variant_ewas_mapping.tsv
 
     -> DISEASE reaction IDs
 
 Disease reactions are removed from the NORMAL reaction set so that the two event branches remain independent.
-
 The disease index also stores the disease-variant records associated with each disease reaction, including exact mutant physical-entity stable IDs.
 
 ---
 ### 6. Identify target reactions
 The script builds EventContexts independently for the NORMAL and DISEASE reaction IDs associated with the requested UniProt accession.
-
 Each EventContext is created from the same local BioPAX model and contains:
 
-the Reactome event;
-
-event roles and participants;
-
-a registry of physical entities and complexes;
-
-sequence features and cellular locations;
-
-controls and catalysis;
-
-pathway chains;
-
-event-specific BioPAX metadata.
+- the Reactome event;
+- event roles and participants;
+- a registry of physical entities and complexes;
+- sequence features and cellular locations;
+- controls and catalysis;
+- pathway chains;
+- event-specific BioPAX metadata.
 
 DISEASE contexts additionally receive only the disease-variant records belonging to the current target UniProt accession.
-
 During tabular processing, mutation metadata are matched to a protein row by exact equality between the row physical-entity stable ID and variant_entity_stable_id. This prevents disease/mutation metadata from being copied onto unrelated partners in the same disease reaction.
-
 A real non-mutant partner of a DISEASE reaction is therefore retained as a DISEASE-context protein row, but its variant-specific fields remain empty.
 
 ---
 ### 7. Extract BioPAX annotations
 For each local Reactome EventContext, the workflow extracts detailed reaction-level and physical-entity annotations from Homo_sapiens.owl.
-
 The extracted information includes:
 
-protein display name;
-
-UniProt accession;
-
-cellular location;
-
-sequence intervals;
-
-sequence sites;
-
-modification type;
-
-direct complex membership and complex stable IDs;
-
-explicit BioPAX component stoichiometry;
-
-EntitySet/protein-family membership;
-
-pathway hierarchy;
-
-reaction name and Reactome stable ID;
-
-biochemical left/right participants;
-
-conversion direction;
-
-reaction EC numbers;
-
-explicit catalytic EC numbers, when present;
-
-regulatory controllers;
-
-NORMAL/DISEASE event context;
-
-disease and disease identifiers;
-
-disease/normal pathway and reaction mappings;
-
-exact disease-variant stable IDs;
-
-compact mutation labels;
-
-variant modification metadata;
-
-functional status;
-
-PubMed references.
+- protein display name;
+- UniProt accession;
+- cellular location;
+- sequence intervals;
+- sequence sites;
+- modification type;
+- direct complex membership and complex stable IDs;
+- explicit BioPAX component stoichiometry;
+- EntitySet/protein-family membership;
+- pathway hierarchy;
+- reaction name and Reactome stable ID;
+- biochemical left/right participants;
+- conversion direction;
+- reaction EC numbers;
+- explicit catalytic EC numbers, when present;
+- regulatory controllers;
+- NORMAL/DISEASE event context;
+- disease and disease identifiers;
+- disease/normal pathway and reaction mappings;
+- exact disease-variant stable IDs;
+- compact mutation labels;
+- variant modification metadata;
+- functional status;
+- PubMed references.
 
 Complex semantics are kept explicit: complex_of is derived from direct BioPAX component relationships, while complex_entity_set represents outer EntitySet-like membership through member_physical_entity. Missing stoichiometry is not inferred.
-
 This step produces nested annotation dictionaries that are converted by LegacyEventAdapter into the structure used by DataProcessingFunctions.
 
 ---
 ### 8. Build and write output tables
 The nested annotation dictionaries are flattened into a pandas.DataFrame.
-
-The final table is then:
-
-cleaned;
-
-deduplicated;
-
-column-ordered;
-
-expanded to one row per variant × disease association when one variant has multiple disease associations;
-
-matched so variant-specific metadata are attached only to the exact mutant physical entity;
-
-filtered to remove protein-family rows;
-
-filtered to remove redundant pathway representations while keeping NORMAL and DISEASE contexts independent;
-
-optionally reordered using locally generated pathway-ordering files;
-
-written to result.csv.
+The final table is then cleaned; deduplicated; column-ordered; expanded to one row per variant × disease association when one variant has multiple disease associations; matched so variant-specific metadata are attached only to the exact mutant physical entity; filtered to remove protein-family rows; filtered to remove redundant pathway representations while keeping NORMAL and DISEASE contexts independent; optionally reordered using locally generated pathway-ordering files and written to result.csv.
 
 Protein-family rows are removed so that the final output focuses on individual protein entries rather than broad family-level Reactome entities.
 
 The final result.csv therefore contains both NORMAL and DISEASE event contexts. Disease reactions can contain mutant rows with disease/variant metadata and genuine non-mutant partner rows with those variant-specific columns empty.
 
 ### Optional post-processing
-After running the main workflow for multiple UniProt accessions, the optional script reactome_post_process.py merges individual result.csv files, harmonizes target columns when needed, removes duplicate summary rows, writes three post-processed CSV files, and generates two PDF plots.
 
-merged_reaction.csv contains a compact reaction-level summary across all analysed UniProt accessions. It keeps the target accession, target name, highest pathway, disease annotation, dynamic intermediate pathway hierarchy, lowest-level pathway, reaction name, reaction ID, left/right participants, and reaction direction.
+After running the main workflow for multiple UniProt accessions, the optional script reactome_post_process.py merges individual result.csv files, harmonizes target columns when needed, removes duplicate summary rows, writes three post-processed CSV files, and generates two PDF plots:
 
-merged_highest_pathways.csv contains a simplified pathway-level summary. It reports the highest-level Reactome pathways associated with each target protein, together with the corresponding Reactome pathway ID, UniProt accession, and target name.
+- *merged_reaction.csv* contains a compact reaction-level summary across all analysed UniProt accessions. It keeps the target accession, target name, highest pathway, disease annotation, dynamic intermediate pathway hierarchy, lowest-level pathway, reaction name, reaction ID, left/right participants, and reaction direction.
 
-disease_single_sequence_site.csv contains a filtered subset of the concatenated results. It keeps only rows where highest_pathway == Disease and SequenceSite contains one numeric residue position.
+- *merged_highest_pathways.csv* contains a simplified pathway-level summary. It reports the highest-level Reactome pathways associated with each target protein, together with the corresponding Reactome pathway ID, UniProt accession, and target name.
 
-highest_pathways.pdf shows a target × highest-pathway matrix. Duplicate target/pathway combinations are removed before plotting.
+- *disease_single_sequence_site.csv* contains a filtered subset of the concatenated results. It keeps only rows where highest_pathway == Disease and SequenceSite contains one numeric residue position.
 
-disease_targets.pdf shows target × disease associations. functional_status values are summarized as loss of function, gain of function, mixed, or unknown. Rows without a disease_name, including non-mutant partners of DISEASE reactions, are not plotted.
+- *highest_pathways.pdf* shows a target × highest-pathway matrix. Duplicate target/pathway combinations are removed before plotting.
+
+- *disease_targets.pdf* shows target × disease associations. functional_status values are summarized as loss of function, gain of function, mixed, or unknown. Rows without a disease_name, including non-mutant partners of DISEASE reactions, are not plotted.
 
 ---
 ## Input
@@ -350,15 +247,15 @@ Input for reactome_to_mavisp.py script:
 | --reactome_release | Reactome release label stored in metadata.json when existing local files are used. |
 | --reactome_download_date | Download date stored in metadata.json when supplied. If unknown, the BioPAX file modification date is used as fallback metadata. |
 
-Here an example of file with a list of uniprot ac
+Here an example of file with a list of uniprot ac:
 
+```text
 P04637
-
 Q8N726
-
 Q9Y2X3
+```
 
-Input for reactome_post_process.py script:
+Input for *reactome_post_process.py* script:
 
 Arguments:
 
@@ -397,11 +294,10 @@ reactome_outputs/
     ├── highest_pathways.pdf
     └── disease_targets.pdf
 ```
-metadata.json records the Reactome release metadata and the local filenames used for BioPAX, UniProt/reaction mapping, and disease-variant mapping.
+*metadata.json* records the Reactome release metadata and the local filenames used for BioPAX, UniProt/reaction mapping, and disease-variant mapping.
 
 ### result.csv
-result.csv is the main output of the workflow. Each row corresponds to an individual protein entry in one Reactome event context involving the target. NORMAL and DISEASE contexts are explicitly separated by event_context_type.
-
+*result.csv* is the main output of the workflow. Each row corresponds to an individual protein entry in one Reactome event context involving the target. NORMAL and DISEASE contexts are explicitly separated by event_context_type.
 Common columns include:
 
 | Column | Description |
@@ -458,15 +354,12 @@ Common columns include:
 | ordered | Boolean flag indicating whether the reaction belongs to the selected locally reconstructed ordered path. False when no applicable ordering is available or pathway ordering is skipped. |
 
 The exact number of pathway_N / pathway_N_id columns is dynamic and depends on the deepest pathway hierarchy present in the analysed results.
-
 For disease variants associated with more than one disease, the workflow writes one row per variant × disease pair, preserving positional pairing between disease_name and disease_identifier.
 
 ### skipped_reactions.csv
-The current fully local workflow does not generate skipped_reactions.csv.
-
+The current fully local workflow does not generate *skipped_reactions.csv*.
 The previous web-service-based implementation used this file to record reactions that failed online metadata/BioPAX retrieval. In the current implementation, reaction/event discovery and BioPAX annotation are obtained from the validated local Reactome release, so those retry-based skip categories are no longer part of the workflow.
-
-If a target produces no valid NORMAL or DISEASE output after local processing, the target is instead recorded at the global level in entries_not_in_reactome.csv.
+If a target produces no valid NORMAL or DISEASE output after local processing, the target is instead recorded at the global level in *entries_not_in_reactome.csv*.
 
 ### entries_not_in_reactome.csv
 This file is written at the global output-directory level when at least one input accession does not produce a valid output.

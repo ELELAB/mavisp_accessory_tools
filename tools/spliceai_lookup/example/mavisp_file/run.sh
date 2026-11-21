@@ -4,3 +4,4 @@
 . /usr/local/envs/spliceai/bin/activate
 
 ../../splice_lookup -i PTEN-ensemble_mode.csv -m -g /data/databases/genome_annotation/ -d 500 -t 9
+python ../../filter_splicing_by_refseq.py -i . -o filtered_splicing_results -r NP_000305

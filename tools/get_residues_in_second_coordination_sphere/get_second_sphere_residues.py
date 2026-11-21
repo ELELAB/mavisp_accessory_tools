@@ -142,6 +142,45 @@ three_one_letter_annotation = {'CYS': 'C', 'ASP': 'D', 'SER': 'S', 'GLN': 'Q', '
                                'ALA': 'A', 'VAL':'V', 'GLU': 'E', 'TYR': 'Y', 'MET': 'M'}
 
 
+def validate_mutation_list_against_pdb(pdb_file_path, mutations):
+    parser = PDB.PDBParser(QUIET=True)
+    structure = parser.get_structure("pdb_structure", pdb_file_path)
+
+    pdb_residues = {}
+    for model in structure:
+        for chain in model:
+            for residue in chain:
+                res_name = residue.get_resname()
+                if res_name not in three_one_letter_annotation:
+                    continue
+                res_id = str(residue.id[1])
+                pdb_residues.setdefault(res_id, set()).add(three_one_letter_annotation[res_name])
+
+    inconsistent_mutations = []
+    mutation_pattern = re.compile(r"^([ACDEFGHIKLMNPQRSTVWY])(\d+)([ACDEFGHIKLMNPQRSTVWY])$")
+    for mutation in mutations:
+        match = mutation_pattern.match(mutation)
+        if match is None:
+            inconsistent_mutations.append(f"{mutation}: invalid mutation format")
+            continue
+
+        wild_type, position, _ = match.groups()
+        pdb_wild_types = pdb_residues.get(position, set())
+        if wild_type not in pdb_wild_types:
+            observed = ", ".join(sorted(pdb_wild_types)) if pdb_wild_types else "not present"
+            inconsistent_mutations.append(
+                f"{mutation}: PDB residue {position} is {observed}, not {wild_type}"
+            )
+
+    if inconsistent_mutations:
+        preview = "\n".join(inconsistent_mutations[:20])
+        remaining = len(inconsistent_mutations) - 20
+        if remaining > 0:
+            preview += f"\n... and {remaining} more inconsistent mutations"
+        raise ValueError(
+            "Generated mutation list is inconsistent with the input PDB:\n" + preview
+        )
+
 
 parser = argparse.ArgumentParser(description = 'The get_second_sphere_residues.py script takes a PDB file '\
                                                'and a list of target residues as input, '
@@ -471,15 +510,19 @@ with open("catalytic_and_second_sphere_residues.txt","w") as f:
 mutation_list=["A","C","D","E","F","G","H","I","L","M","N","P",
                "Q","R","S","T","V","Y","W","K"]
 
+generated_mutations = []
+for key,value in residue_pos_dict.items():
+    tmp_mutation_list = mutation_list.copy()
+    tmp_mutation_list.remove(value)
+    for residue in tmp_mutation_list:
+        mutation=value+str(int(key))+residue
+        generated_mutations.append(mutation)
+
+validate_mutation_list_against_pdb(pdb_file_path, generated_mutations)
+
 with open("catalytic_and_second_sphere_residues_saturation_mutlist.txt","w") as f:
-    for key,value in residue_pos_dict.items():
-        tmp_mutation_list = mutation_list.copy()
-        tmp_mutation_list.remove(value)
-        for residue in tmp_mutation_list:
-            mutation=value+str((int(key)+1))+residue
-            f.write(mutation+"\n")
-
-
+    for mutation in generated_mutations:
+        f.write(mutation+"\n")
 
 
 

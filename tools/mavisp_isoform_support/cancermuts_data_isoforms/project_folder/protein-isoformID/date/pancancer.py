@@ -44,13 +44,20 @@ except UnexpectedIsoformError:
     print("cBioPortal mutations will not be added, as a non-canonical isoform has been provided")
 
 # add mutations from COSMIC
-cosmic = COSMIC(targeted_database_file='/data/databases/cosmic-v102/Cosmic_CompleteTargetedScreensMutant_v102_GRCh38.tsv',
-				screen_mutant_database_file='/data/databases/cosmic-v102/Cosmic_GenomeScreensMutant_v102_GRCh38.tsv',
-				classification_database_file='/data/databases/cosmic-v102/Cosmic_Classification_v102_GRCh38.tsv',
+cosmic = COSMIC(targeted_database_file='/data/databases/cosmic-v104/Cosmic_CompleteTargetedScreensMutant_v104_GRCh38.tsv',
+				screen_mutant_database_file='/data/databases/cosmic-v104/Cosmic_GenomeScreensMutant_v104_GRCh38.tsv',
+				classification_database_file='/data/databases/cosmic-v104/Cosmic_Classification_v104_GRCh38.tsv',
 				database_encoding='latin1', lazy_load_db=True,
                 )
-cosmic.add_mutations(seq, genome_assembly_version='GRCh38', metadata=['genomic_coordinates', 'genomic_mutations',
+try:
+    cosmic.add_mutations(seq, genome_assembly_version='GRCh38', metadata=['genomic_coordinates', 'genomic_mutations',
                                                 'cancer_site', 'cancer_histology'])
+except ValueError as e:
+    if "is not present in the database files" in str(e):
+        print(f"WARNING: Skipping COSMIC for {args.prt}: gene not found in COSMIC.")
+    else:
+        raise
+
 #add mutations from ClinVar:
 if args.refseq:
     seq.aliases["refseq"] = args.refseq
@@ -78,7 +85,7 @@ if args.external_mutations:
         ma.add_mutations(seq)
 
         # add PTM annotations to the sequence object
-        ma.add_position_properties(seq)
+        ma.add_sequence_properties(seq)
 
         # add structure or linear motif annotation to the sequence object
         ma.add_sequence_properties(seq)
@@ -89,15 +96,15 @@ rl.add_metadata(seq)
 
 
 # add annotations from gnomAD
-gnomad = gnomAD(version='2.1')
+gnomad = gnomAD(version='2.1', reference_genome_fasta="/data/databases/genome_annotation/hg19.fa")
 gnomad.add_metadata(seq, md_type=['gnomad_exome_allele_frequency',
-                                      'gnomad_genome_allele_frequency'])
+	                              'gnomad_genome_allele_frequency'])
 
 # PhosphoSite does not support non-canonical isoforms
 ps = PhosphoSite('/data/databases/phosphosite/')
 
 try:
-    ps.add_position_properties(seq)
+    ps.add_sequence_properties(seq)
 except UnexpectedIsoformError:
     print("PhosphoSite annotations will not be added, as a non-canonical isoform has been provided")
 
@@ -105,7 +112,7 @@ except UnexpectedIsoformError:
 db = dbPTM('/data/databases/dbPTM/')
 
 try:
-    db.add_position_properties(seq)
+    db.add_sequence_properties(seq)
 except UnexpectedIsoformError:
     print("dbPTM annotations will not be added, as a non-canonical isoform has been provided")
 
@@ -113,19 +120,19 @@ except UnexpectedIsoformError:
 gg = GlyGen('/data/databases/GlyGen/', database_file='human_proteoform_glycosylation_sites_uniprotkb_filtered.csv')
 
 try:
-    gg.add_position_properties(seq)
+    gg.add_sequence_properties(seq)
 except UnexpectedIsoformError:
     print("GlyGen annotations will not be added, as a non-canonical isoform has been provided")
 
 # add annotations from NetPhos
 np = NetPhos('/data/databases/netphos_human_proteome/netphos_human_isoforms/raw/')
-np.add_position_properties(seq)
+np.add_sequence_properties(seq)
 
 # MobiDB does not suport non-canonical isoforms
 mdb = MobiDB()
 
 try:
-    mdb.add_position_properties(seq)
+    mdb.add_sequence_properties(seq)
 except UnexpectedIsoformError:
     print("MobiDB annotations will not be added, as a non-canonical isoform has been provided")
 
